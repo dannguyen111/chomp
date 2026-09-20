@@ -16,7 +16,7 @@ So the project's target -- *any* explicit computable bound on `N(r)` -- is numer
 
 `N(r)` is read off the solver's census: the least `q0` such that `f(q,r) - q` is exactly periodic for all `q >= q0`, computed online as `1 + max{q : d(q) != d(q+pi)}` for the minimal eventual period `pi`.
 
-Census file: `C:/Users/sidan/Desktop/Mine/compsci/personal_websites/chomp-harness/chomp/GROUND_TRUTH/cache/census_50000.tsv` (r <= 50000).  The solver is validated by `GROUND_TRUTH/tests/` against Brouwer's 325-cell table, eight OEIS sequences, the r=120 anomaly and Nivasch's full period census; every one of the nine `(r, start)` pairs in MISSION.md section 5 is reproduced exactly.
+Census file: `GROUND_TRUTH/cache/census_50000.tsv` (r <= 50000).  The solver is validated by `GROUND_TRUTH/tests/` against Brouwer's 325-cell table, eight OEIS sequences, the r=120 anomaly and Nivasch's full period census; every one of the nine `(r, start)` pairs in MISSION.md section 5 is reproduced exactly.
 
 
 **Horizon robustness.** Each column is finalised at `q = 1.8r + 600` once periodicity has held for `max(300, r/4)` steps.  Re-running with horizons of `3r`, `4r` and `6r` and confirmation windows up to 2000 changes **no** `N(r)`, period or pattern (0 differences for r <= 6000 at 6r, and for r <= 20000 at 3r).  The preperiods are not horizon artefacts.
@@ -34,7 +34,7 @@ Census file: `C:/Users/sidan/Desktop/Mine/compsci/personal_websites/chomp-harnes
 | 10000-24999 | 15000 | 1.414279 | 0.000066 | +1.069 | -1.435 | +5.647 |
 | 25000-49999 | 25000 | 1.414244 | 0.000029 | +1.087 | -3.157 | +5.696 |
 
-The mean tracks `sqrt(2) = 1.414214` and the spread falls like `1/r` (sd drops by ~185x from the 100-400 band to the 25000-50000 band, while `r` grows ~100x) -- exactly the signature of a bounded numerator, not of `o(r)` drift.
+The mean tracks `sqrt(2) = 1.414214` and the spread falls like `1/r`: the sd drops ~6450x from the 1-99 band to the 25000-49999 band while `r` grows ~743x -- exactly the signature of a bounded numerator, not of `o(r)` drift.
 
 
 ## 3. Does it tighten? Yes, and the sup saturates

@@ -1,0 +1,11 @@
+{
+  "session": "S20260920T2126",
+  "island": "01-recurrence",
+  "turns": 47,
+  "output_tokens": 252546,
+  "minutes": 101.9,
+  "cost": 0.4955,
+  "total_spent": 0.4955,
+  "remaining": 29.5045,
+  "handoff_written": true
+}

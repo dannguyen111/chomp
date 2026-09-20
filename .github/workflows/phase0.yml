@@ -43,7 +43,14 @@ jobs:
           set -euo pipefail
           rm -rf /tmp/selftest && mkdir -p /tmp/selftest
           tar -c --exclude=.git . | tar -x -C /tmp/selftest
-          cd /tmp/selftest && python test_harness.py
+          cd /tmp/selftest
+          # test_harness.py is a unit test of the harness, not of the project
+          # state: it asserts the first claim it writes gets id C0001 and that
+          # the budget starts at zero. Give it the blank fixture it expects, or
+          # it fails on every run after Phase 0 seeds the real ledger.
+          : > LEDGER/claims.jsonl
+          echo '{"cap": 30.0, "spent": 0.0, "calls": 0, "log": []}' > BUDGET.json
+          python test_harness.py
           cd "$GITHUB_WORKSPACE"
           git diff --quiet -- LEDGER islands BUDGET.json \
             || { echo "self-test leaked into the real tree"; git diff --stat; exit 1; }

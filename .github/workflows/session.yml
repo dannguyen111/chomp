@@ -1,0 +1,122 @@
+name: session
+
+# One explorer session per run. The concurrency group replaces flock: GitHub
+# queues a second run rather than starting it alongside the first, so only one
+# session ever touches the ledger.
+#
+# The schedule is gated behind runs/AUTOPILOT. Until that file exists, only
+# workflow_dispatch does anything. That is Stop 2 from the plan: you read a
+# transcript before the cron is allowed to spend anything.
+
+on:
+  schedule:
+    - cron: "0 */8 * * *"
+  workflow_dispatch:
+    inputs:
+      island:
+        type: choice
+        options: ["auto", "01-recurrence", "02-renorm"]
+        default: "auto"
+      session_cap:
+        description: "USD ceiling for this one session"
+        default: "3.00"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chomp
+  cancel-in-progress: false
+
+jobs:
+  session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gate on autopilot and budget
+        id: gate
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "schedule" ] && [ ! -f runs/AUTOPILOT ]; then
+            echo "Autopilot off. Commit an empty runs/AUTOPILOT to enable the cron."
+            echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          REMAIN=$(python -c "import json;d=json.load(open('BUDGET.json'));print(d['cap']-d['spent'])")
+          echo "Remaining: \$$REMAIN"
+          # Below one session's worth, stop rather than start something that
+          # will be cut off mid-proof.
+          python -c "import sys;sys.exit(0 if $REMAIN >= 3.0 else 1)" \
+            && echo "go=true" >> "$GITHUB_OUTPUT" \
+            || { echo "Budget too low for a full session."; echo "go=false" >> "$GITHUB_OUTPUT"; }
+
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.go == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        if: steps.gate.outputs.go == 'true'
+        run: pip install requests
+
+      - name: Restore solver
+        if: steps.gate.outputs.go == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            GROUND_TRUTH/solver
+            GROUND_TRUTH/cache
+          key: solver-${{ hashFiles('GROUND_TRUTH/solver.cpp') }}
+          fail-on-cache-miss: true
+
+      - name: Pick island
+        if: steps.gate.outputs.go == 'true'
+        id: pick
+        run: |
+          ISLAND="${{ inputs.island }}"
+          # Scheduled runs alternate islands so neither starves.
+          if [ -z "$ISLAND" ] || [ "$ISLAND" = "auto" ]; then
+            [ $(( ${{ github.run_number }} % 2 )) -eq 0 ] \
+              && ISLAND=01-recurrence || ISLAND=02-renorm
+          fi
+          echo "island=$ISLAND" >> "$GITHUB_OUTPUT"
+          echo "Running $ISLAND"
+
+      - name: Run session
+        if: steps.gate.outputs.go == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          chmod +x GROUND_TRUTH/solver
+          python -m harness.session \
+            --root . \
+            --island "${{ steps.pick.outputs.island }}" \
+            --session-cap "${{ inputs.session_cap || '3.00' }}" \
+            --max-minutes 300
+
+      - name: Commit state
+        if: always() && steps.gate.outputs.go == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "chomp-harness"
+          git config user.email "noreply@github.com"
+          git add -A BUDGET.json LEDGER islands runs
+          git diff --cached --quiet && exit 0
+          git commit -m "session ${{ github.run_number }} (${{ steps.pick.outputs.island }})"
+          # Another run may have landed while this one worked. Rebase and retry
+          # rather than force-pushing over someone else's ledger append.
+          for i in 1 2 3; do
+            git pull --rebase --autostash && git push && exit 0
+            sleep $((i * 5))
+          done
+          echo "Push failed after 3 attempts."; exit 1
+
+      - name: Session summary
+        if: always() && steps.gate.outputs.go == 'true'
+        run: |
+          LATEST=$(ls -td runs/S* 2>/dev/null | head -1) || exit 0
+          [ -f "$LATEST/summary.json" ] || exit 0
+          { echo '```json'; cat "$LATEST/summary.json"; echo '```'; } \
+            >> "$GITHUB_STEP_SUMMARY"

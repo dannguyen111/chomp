@@ -1,0 +1,99 @@
+name: phase0
+
+# Builds and validates the solver, then caches the binary so every later
+# session starts with a working oracle. Manual trigger only: Phase 0 runs once.
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_r:
+        description: "Census ceiling for the validation run"
+        default: "10000"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chomp
+  cancel-in-progress: false
+
+jobs:
+  phase0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install requests matplotlib
+
+      # test_harness.py exercises the real Ledger and Budget, so it APPENDS
+      # three claims plus a deliberately corrupt line to LEDGER/claims.jsonl,
+      # charges $0.12 to BUDGET.json, and writes a fake islands/01-recurrence/
+      # HANDOFF.md. The "Commit generated tables" step below would then push all
+      # of that, and the next explorer session would read the fake handoff as
+      # fact. Run it against a throwaway copy of the tree instead.
+      - name: Harness self-test (throwaway copy -- it writes to LEDGER and BUDGET)
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/selftest && mkdir -p /tmp/selftest
+          tar -c --exclude=.git . | tar -x -C /tmp/selftest
+          cd /tmp/selftest && python test_harness.py
+          cd "$GITHUB_WORKSPACE"
+          git diff --quiet -- LEDGER islands BUDGET.json \
+            || { echo "self-test leaked into the real tree"; git diff --stat; exit 1; }
+
+      - name: Build solver
+        run: |
+          set -euo pipefail
+          test -f GROUND_TRUTH/solver.cpp || {
+            echo "GROUND_TRUTH/solver.cpp missing. Run KICKOFF.md steps 2-3 first."
+            exit 1
+          }
+          # -march=x86-64-v3 is safe: GitHub runners are all Haswell or newer.
+          g++ -O3 -march=x86-64-v3 -flto -o GROUND_TRUTH/solver GROUND_TRUTH/solver.cpp
+          ls -la GROUND_TRUTH/solver
+
+      # --cache both speeds the suite up and leaves the census in
+      # GROUND_TRUTH/cache, which the next step stores so explorer sessions
+      # start with it already computed instead of paying for it in wall clock.
+      - name: Validate against literature
+        run: |
+          set -euo pipefail
+          mkdir -p GROUND_TRUTH/cache
+          python -m GROUND_TRUTH.tests.run_all \
+            --max-r "${{ inputs.max_r }}" \
+            --cache "GROUND_TRUTH/cache/census_${{ inputs.max_r }}.tsv"
+
+      - name: Regenerate the seed-conjecture write-up
+        run: |
+          set -euo pipefail
+          python -m GROUND_TRUTH.seed_check \
+            --census "GROUND_TRUTH/cache/census_${{ inputs.max_r }}.tsv"
+
+      - name: Cache solver binary
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            GROUND_TRUTH/solver
+            GROUND_TRUTH/cache
+          key: solver-${{ hashFiles('GROUND_TRUTH/solver.cpp') }}
+
+      - name: Commit generated tables
+        run: |
+          set -euo pipefail
+          git config user.name "chomp-harness"
+          git config user.email "noreply@github.com"
+          git add -A GROUND_TRUTH LEDGER islands
+          git diff --cached --quiet && exit 0
+          git commit -m "phase0: validated solver, seeded ledger"
+          for i in 1 2 3; do
+            git pull --rebase --autostash && git push && exit 0
+            sleep $((i * 5))
+          done
+          echo "Push failed after 3 attempts."; exit 1

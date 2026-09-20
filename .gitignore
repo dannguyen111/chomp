@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+.session.lock
+.session.lock.d/
+runs/.prefix-*
+# The API key, when kept in a file for local runs. Never committed.
+.env
+# Built by the phase0 workflow and restored from cache. Never committed:
+# a stale binary in the tree is how a false lemma survives the referee.
+GROUND_TRUTH/solver
+GROUND_TRUTH/solver.exe
+GROUND_TRUTH/*.obj
+GROUND_TRUTH/cache/
+# Third-party papers, refetched by GROUND_TRUTH/fetch_sources.py.
+# This repo is public; redistributing them is not ours to do. The
+# tests need none of it -- see GROUND_TRUTH/tests/data/SOURCES.md.
+GROUND_TRUTH/data/
+islands/*/scratch/

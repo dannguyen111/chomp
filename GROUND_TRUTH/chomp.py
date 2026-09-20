@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -149,11 +150,58 @@ def _parse_census(txt: str) -> dict[int, dict]:
     return out
 
 
+class CorruptCensus(RuntimeError):
+    """A census file is not a complete run. Never silently reuse one."""
+
+
+_TRAILER = re.compile(r"^# complete rmax=(\d+) rows=(\d+)\s*$", re.M)
+
+
+def _validate(txt: str, cen: dict[int, dict], where: str,
+              rmax: int | None = None) -> dict[int, dict]:
+    """A census must be complete: it must carry the solver's trailer, cover
+    0..rmax with no gaps, and have the row count the trailer claims.
+
+    Without the trailer check a file truncated to its first row still parses as
+    a valid (tiny) census, and every number computed from it downstream would be
+    quietly wrong. That is the exact shape of failure MISSION.md section 6 is
+    written to prevent, so this raises rather than warns.
+    """
+    m = _TRAILER.search(txt)
+    if not m:
+        raise CorruptCensus(
+            f"{where}: no completion trailer -- the file is truncated, or was "
+            f"written by a solver predating the trailer. Delete and recompute.")
+    claimed_r, claimed_n = int(m.group(1)), int(m.group(2))
+    if not cen:
+        raise CorruptCensus(f"{where}: no census rows")
+    if len(cen) != claimed_n:
+        raise CorruptCensus(
+            f"{where}: trailer claims {claimed_n} rows, parsed {len(cen)}")
+    if max(cen) != claimed_r:
+        raise CorruptCensus(
+            f"{where}: trailer claims rmax={claimed_r}, parsed {max(cen)}")
+    top = max(cen)
+    missing = [r for r in range(top + 1) if r not in cen]
+    if missing:
+        raise CorruptCensus(
+            f"{where}: {len(missing)} gaps in 0..{top}, first at r={missing[0]}")
+    if rmax is not None and top < rmax:
+        raise CorruptCensus(
+            f"{where}: covers r<={top} but r<={rmax} was asked for "
+            f"(truncated file? delete it and recompute)")
+    return cen
+
+
 def census(rmax: int, alpha: float | None = None, margin: int | None = None,
            confirm: int | None = None, cache: Path | None = None) -> dict[int, dict]:
-    """One descriptor per r in 0..rmax.  `cache` reuses/writes a TSV."""
+    """One descriptor per r in 0..rmax.  `cache` reuses/writes a TSV.
+
+    Pass rmax=0 to mean "whatever is in the cache file".
+    """
     if cache is not None and Path(cache).exists():
-        return _parse_census(Path(cache).read_text())
+        raw = Path(cache).read_text()
+        return _validate(raw, _parse_census(raw), str(cache), rmax or None)
     args: list[object] = ["census", "--rmax", rmax]
     if alpha is not None:
         args += ["--alpha", alpha]
@@ -162,10 +210,16 @@ def census(rmax: int, alpha: float | None = None, margin: int | None = None,
     if confirm is not None:
         args += ["--confirm", confirm]
     txt = run(*args)
+    cen = _validate(txt, _parse_census(txt), "solver output", rmax or None)
     if cache is not None:
-        Path(cache).parent.mkdir(parents=True, exist_ok=True)
-        Path(cache).write_text(txt)
-    return _parse_census(txt)
+        # Write through a temp file in the same directory and rename, so an
+        # interrupted run leaves no half-written census behind to be reused.
+        dest = Path(cache)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        tmp = dest.with_suffix(dest.suffix + ".part")
+        tmp.write_text(txt)
+        tmp.replace(dest)
+    return cen
 
 
 def f_at(cen: dict[int, dict], q: int, r: int) -> int | None:

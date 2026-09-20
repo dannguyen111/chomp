@@ -101,10 +101,19 @@ def main(argv=None) -> int:
         dv = [n - S2 * r for r, n in sub]
         w(f"| {lo}-{hi-1} | {len(sub)} | {st.mean(rat):.6f} | {st.pstdev(rat):.6f} "
           f"| {st.mean(dv):+.3f} | {min(dv):+.3f} | {max(dv):+.3f} |")
-    w(f"\nThe mean tracks `sqrt(2) = {S2:.6f}` and the spread falls like `1/r` "
-      f"(sd drops by ~{st.pstdev([n/r for r,n,*_ in rows if 100<=r<400]) / st.pstdev([n/r for r,n,*_ in rows if 25000<=r<50000]):.0f}x "
-      f"from the 100-400 band to the 25000-50000 band, while `r` grows ~100x) "
-      f"-- exactly the signature of a bounded numerator, not of `o(r)` drift.\n")
+    # Compare the first and last bands that actually carry data, so this reads
+    # correctly at any rmax instead of assuming the r = 50000 run.
+    usable = [(lo, hi, [n / r for r, n, *_ in rows if lo <= r < hi])
+              for lo, hi in bands(rmax)]
+    usable = [(lo, hi, v) for lo, hi, v in usable
+              if len(v) >= 2 and st.pstdev(v) > 0]
+    if len(usable) >= 2:
+        (lo0, hi0, v0), (lo1, hi1, v1) = usable[0], usable[-1]
+        w(f"\nThe mean tracks `sqrt(2) = {S2:.6f}` and the spread "
+          f"falls like `1/r`: the sd drops ~{st.pstdev(v0) / st.pstdev(v1):.0f}x "
+          f"from the {lo0}-{hi0 - 1} band to the {lo1}-{hi1 - 1} band while "
+          f"`r` grows ~{((lo1 + hi1) / 2) / ((lo0 + hi0) / 2):.0f}x -- exactly "
+          f"the signature of a bounded numerator, not of `o(r)` drift.\n")
 
     w("\n## 3. Does it tighten? Yes, and the sup saturates\n")
     w("| r <= | sup abs(N - sqrt2 r) |")
@@ -199,8 +208,9 @@ def main(argv=None) -> int:
     w("\n## 7. Verdict\n")
     w(f"**Conjecture N is alive and understated.** It should be replaced in the "
       f"ledger by the stronger and more useful form:\n")
-    w(f"> `N(r) = sqrt(2) r + O(1)`, with `|N(r) - sqrt(2) r| < 5.70` verified "
-      f"for all `1 <= r <= {rmax}`.\n")
+    w(f"> `N(r) = sqrt(2) r + O(1)`, with "
+      f"`|N(r) - sqrt(2) r| < {max(abs(dmin), abs(dmax)):.2f}` verified for "
+      f"all `1 <= r <= {rmax}`.\n")
     w(f"\nTwo warnings against over-reading it:\n")
     w(f"1. This is numerics, not proof.  MISSION.md section 7: numerical "
       f"agreement is evidence, never proof.  The bound is logged as "

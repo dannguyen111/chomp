@@ -414,7 +414,12 @@ int main(int argc, char **argv) {
         if (!f) fatal("cannot open output file");
         std::fprintf(f, "r\tclass\tperiod\tN\tdvals\tdeathq\tdconst\tqend\n");
         for (u32 r = 0; r <= R; ++r) print_col(f, S, r);
-        if (out) std::fclose(f);
+        // Completion trailer. A census truncated by a crash, a full disk or a
+        // cancelled CI job still parses as a valid (tiny) census, and every
+        // number computed from it downstream would be quietly wrong. The
+        // wrapper refuses any file that does not end with this line.
+        std::fprintf(f, "# complete rmax=%u rows=%u\n", R, R + 1);
+        if (out) { if (std::fclose(f) != 0) fatal("census write failed"); }
         S.stats("census", std::chrono::duration<double>(
             std::chrono::steady_clock::now() - t0).count());
         return 0;

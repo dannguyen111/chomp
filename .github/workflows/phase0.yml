@@ -77,7 +77,11 @@ jobs:
             --max-r "${{ inputs.max_r }}" \
             --cache "GROUND_TRUTH/cache/census_${{ inputs.max_r }}.tsv"
 
+      # The committed seed_check.md was generated at r = 50000. Regenerating it
+      # from a narrower census would silently downgrade the analysis, so only
+      # overwrite it when this run is at least as wide.
       - name: Regenerate the seed-conjecture write-up
+        if: fromJSON(inputs.max_r) >= 50000
         run: |
           set -euo pipefail
           python -m GROUND_TRUTH.seed_check \

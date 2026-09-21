@@ -115,24 +115,59 @@ def _clip(s: str) -> str:
 # against an isolated box (see harness/make_refbox.py) and any command that
 # reaches for a parent directory, an absolute path or a home directory is
 # refused -- inside a four-file box there is no legitimate reason to.
+#
+# The first version of this screen refused any "/" preceded by whitespace. That
+# also refuses `a / b`, so every Python script the referee wrote was rejected,
+# it burned its turns on refusals, and produced no verdict at all. Match paths,
+# not punctuation: a parent-directory hop, a home-directory reference, or a
+# rooted path that is not inside the box.
 _ESCAPE = re.compile(
-    r"""(^|[\s'"=(])(\.\.[\\/]|[\\/](?![\\/])|~[\\/]|[A-Za-z]:[\\/])""")
+    r"""(?:(?<=^)|(?<=[\s'"=(<>|;&]))"""          # at a token boundary
+    r"""(\.\.[\\/]|~[\\/]|/[A-Za-z]|[A-Za-z]:[\\/])""")
+
+# Network egress. The referee's novelty pass wants it, but this repo is public
+# and named for the problem: a search for the claim can land on the project
+# itself, which hands over every piece of provenance the box removes. Novelty
+# is checked by the operator instead.
+_NET = re.compile(r"\b(curl|wget|nc|ncat|ssh|scp|ftp|telnet|pip|npm|git)\b")
+
+# A bare "/" cannot be told from division without breaking arithmetic again, so
+# sweeps rooted at "/" are matched by the command instead. This is the one the
+# first run actually attempted: `ls -la / && find / -maxdepth 3 -iname '*chomp*'`.
+_SWEEP = re.compile(r"\b(find|fd|locate|tree|du|ls)\b[^|;&]*?\s/(?:\s|$)")
 
 
-def _escapes(command: str) -> str | None:
-    m = _ESCAPE.search(command)
-    return m.group(0).strip() if m else None
+def _escapes(command: str, root: Path) -> str | None:
+    """Why this command may not run in a sandbox, or None if it may."""
+    m = _NET.search(command)
+    if m:
+        return (f"{m.group(1)!r} reaches the network. Everything needed to "
+                f"judge the submission is in the working directory; novelty is "
+                f"not your call to make here.")
+    m = _SWEEP.search(command)
+    if m:
+        return (f"{m.group(1)!r} rooted at '/' sweeps the filesystem. "
+                f"Everything you need is in the working directory.")
+    for m in _ESCAPE.finditer(command):
+        tok = m.group(1)
+        # An absolute path INTO the box is fine -- the referee often cds to it.
+        start = m.start(1)
+        tail = command[start:start + len(str(root)) + 1]
+        if tail.startswith(str(root)) or tail.startswith(str(root).replace("\\", "/")):
+            continue
+        return (f"{tok!r} reaches outside the working directory. Everything you "
+                f"need is in it; list it with `ls`. Write scratch files there, "
+                f"not in /tmp.")
+    return None
 
 
 def dispatch(name: str, args: dict, root: Path, *, sandbox: bool = False) -> str:
     try:
         if name == "bash":
             if sandbox:
-                bad = _escapes(args["command"])
+                bad = _escapes(args["command"], root)
                 if bad:
-                    return (f"REFUSED: {bad!r} reaches outside the working "
-                            f"directory. Everything you need is in it; list it "
-                            f"with `ls`. This refusal is recorded.")
+                    return f"REFUSED: {bad} This refusal is recorded."
             timeout = min(int(args.get("timeout", 600)), 3600)
             r = subprocess.run(
                 args["command"],

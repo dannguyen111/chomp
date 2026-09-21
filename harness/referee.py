@@ -195,8 +195,14 @@ def referee(root: Path, claim_id: str, session: str = "referee",
 
         v = _parse(reply.text)
         if v is None:
-            v = {"disposition": "reject", "gap_description":
-                 "referee emitted no parseable verdict", "confidence": "low"}
+            # NOT a reject. A referee that never produced a verdict has said
+            # nothing about the mathematics, and mapping that to `reject` --
+            # which `refuted` follows from -- silently destroys correct claims.
+            # The first run of this gate did exactly that to both claims it saw.
+            v = {"disposition": "inconclusive", "gap_description":
+                 "no parseable verdict: the referee did not finish. This is a "
+                 "harness failure and says nothing about the claim.",
+                 "confidence": "none"}
         v["_temperature"] = temp
         verdicts.append(v)
         print(f"[referee t={temp}] {v.get('disposition')} -- "
@@ -204,8 +210,15 @@ def referee(root: Path, claim_id: str, session: str = "referee",
 
     d0, d1 = (v.get("disposition") for v in verdicts)
     agreed = d0 == d1
-    # Disagreement is never an accept. Split decisions fall to the weaker verdict.
-    final = d0 if agreed else "reject"
+    # Disagreement is never an accept. But a pass that produced no verdict is
+    # not evidence against the claim, so it can never combine into a reject --
+    # it makes the whole run inconclusive and the claim is left alone.
+    if "inconclusive" in (d0, d1):
+        final = "inconclusive"
+    elif agreed:
+        final = d0
+    else:
+        final = "reject"
 
     out_dir = root / "LEDGER" / "referee"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -219,7 +232,13 @@ def referee(root: Path, claim_id: str, session: str = "referee",
         "spend": round(budget.spent - start_spend, 4),
         "verdicts": verdicts,
     }
-    (out_dir / f"{claim_id}.json").write_text(json.dumps(report, indent=2))
+    # An inconclusive run is a harness bug report, not a verdict. Keep it out of
+    # the verdict directory, or `refereeable()` will treat the claim as judged
+    # and never look at it again.
+    name = (f"{claim_id}.json" if final != "inconclusive"
+            else f"invalid/{claim_id}.inconclusive.json")
+    (out_dir / name).parent.mkdir(parents=True, exist_ok=True)
+    (out_dir / name).write_text(json.dumps(report, indent=2))
 
     novel = all(
         (v.get("novelty") or {}).get("result") != "already known" for v in verdicts
@@ -227,6 +246,11 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     if final == "accept" and agreed and novel:
         led.set_status(claim_id, "proven", session, novelty_checked=True)
         print(f"\n{claim_id} PROMOTED to proven.")
+    elif final == "inconclusive":
+        print(f"\n{claim_id} INCONCLUSIVE -- the referee did not finish. The "
+              f"claim is untouched and remains refereeable. This is a harness "
+              f"problem to fix, not a result: see "
+              f"LEDGER/referee/invalid/{claim_id}.inconclusive.json")
     elif final == "reject":
         led.set_status(
             claim_id, "refuted", session,

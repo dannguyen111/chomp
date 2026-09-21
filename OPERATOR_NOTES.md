@@ -103,6 +103,43 @@ overshoots by up to `GRACE_TURNS` (10) turns while landing its results. Read
 is ~570 minutes and a hosted job is hard-killed at 360. Session cap 5.00,
 `--max-minutes 300`, `timeout-minutes: 355`. Sessions land at $2-3.
 
+## 3a. The first referee run, and what it cost
+
+Run 35654519435 (2026-09-21) produced no verdicts and **marked both claims
+`refuted`**. Neither referee ever argued against the mathematics; all four
+passes were starved by the sandbox and never emitted JSON, and referee.py
+mapped an unparseable reply to `reject`, which `refuted` follows from. The
+claims have been restored to `open` and the verdict files quarantined under
+`LEDGER/referee/invalid/`.
+
+Two bugs, both mine, both now fixed:
+
+1. **A harness failure was treated as a mathematical judgement.** `_parse`
+   returning None became `disposition: reject`. It now becomes `inconclusive`,
+   which can never combine into a reject, never changes claim status, and is
+   written to `referee/invalid/` so the claim stays refereeable. *No code path
+   may turn "the referee did not finish" into "the claim is false."*
+2. **The escape screen refused any `/` preceded by whitespace** -- which is
+   every Python division, so every analysis script the referee wrote was
+   rejected. It burned its turns on refusals. The screen now matches paths, not
+   punctuation, and is tested against the fifteen commands the failed run
+   actually issued.
+
+What the run did prove: the referees **tried to escape**, ten times on one
+claim and six on the other, including `ls -la / && find / -maxdepth 3 -iname
+'*chomp*'` -- an explicit hunt for the project directory. Sandboxing was not
+paranoia.
+
+Network is now blocked in the sandbox too. The referee prompt asks for a
+novelty check, but this repo is public and named for the problem, so a search
+for the claim can land on the project itself and hand over every piece of
+provenance the box removes. **Novelty is the operator's job**, not the
+referee's; treat the `novelty` field of any verdict as unfilled.
+
+Containment is a guardrail, not a boundary: `bash` runs with `shell=True`, and
+a determined agent can still enumerate directories. The real fix is running the
+job in a container. Until then, read `escape_attempts_blocked` in every verdict.
+
 ## 4. Known defects, not yet fixed
 
 **~~The wired referee can read its way around the redaction.~~ FIXED

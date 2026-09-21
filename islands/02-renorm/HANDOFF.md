@@ -1,81 +1,84 @@
 ## State
 
-Phase 0 (no model spend) built and validated the solver, tested the seed
-conjecture to `r = 50000`, and read both periodicity proofs. You are the first
-explorer session on this island.
+The target is a strip bound: prove `|A029902(n) - a n| <= K` for an explicit
+computable `K`, `a = 1 + sqrt(2)/2` (equivalently A029901 about `b n`,
+`b = 1 + sqrt(2)`). This discharges (B1) of `GROUND_TRUTH/byrnes_audit.md` and
+makes Byrnes effective. Numerics measured and saturating: `|A029902(n)-a n| <= 1.853`
+and `|A029901(n)-b n| <= 3.908` over all 29289 stale rows to r=50000 (Brouwer's
+strips match exactly).
 
-The renormalisation picture came out of Phase 0 in much better shape than it
-went in. `N(r) = sqrt(2) r + O(1)` holds over all 50000 rows with the error
-confined to `[-3.16, +5.70]`, and it holds on *every* class of row, not only the
-period `>= 2` rows the literature tabulates. More usefully, the `sqrt(2)` has
-been traced to its source: rows split into two complementary families of
-densities `1/a` and `1/b` with `a = 1 + sqrt(2)/2`, `b = 1 + sqrt(2)`, and on
-the 59% of rows that are stale, `N(r) - sqrt(2) r = 1 + eps1(n) - sqrt(2) eps2(n)`
-*exactly*, where `eps1`, `eps2` are the deviations of A029901 and A029902 from
-their Friedman-Landsberg lines. So Conjecture N on those rows is not a separate
-conjecture at all -- it is a strip bound.
+This session sharpened the target and then stress-tested the main route:
+
+- **C0016**: strip bound ⟺ bounded discrepancy `D(x) = #{A029902<=x} - x/a`,
+  via `A029902(n) - a n = -a D(A029902(n))`; measured `D(x) in [-0.871, 1.085]`.
+- **C0015/C0019**: the discrepancy satisfies the exact integer cocycle
+  `D(x) + D(floor(bx)) in {-1,0,1}` (equiv `N(x)+N(floor(bx)) = 2x + {-1,0,1}`),
+  verified for every x with bx <= 50000.
+- **C0017**: `A029902(n) = f(n,n) + O(1)` (in {-3..1}), `A029901(n) = 2 A029902(n) - n + O(1)`
+  (in {-1..3}); `2a-1 = b` exactly.
+- **C0018**: the stale/live indicator word has maximal factor complexity (not
+  Sturmian, not low-complexity).
+- **C0014**: H&L Theorem 3.3 gives no error term; their Conjecture 5.1 is our
+  strip bound, open.
 
 ## This session
 
-Phase 0, not an explorer session. See `islands/01-recurrence/HANDOFF.md` for the
-solver and validation summary; the same ground truth serves both islands.
+Read Hegarty-Larsson in full (C0014): Theorem 3.3 gives only asymptotic density,
+no error term; Conjecture 5.1 *is* the strip bound, stated open — so the Phase 0
+pointer does not pay out directly.
+
+Computed the structure of A029901/A029902 from the census and a self-contained
+Python solver (scratch/diag_solver.py). Found the discrepancy reframing (C0016),
+the exact integer self-similarity (C0015, sharpened to the clean integer form in
+C0019), the diagonal bridge (C0017), and the negative result that the word is
+maximal-complexity (C0018).
+
+**Then ran the kill test I flagged in the previous handoff** (the most important
+thing this session): does the self-similarity alone force D bounded? **No**
+(C0020). The cocycle `D(x)+D(bx) in {-1,0,1}` is satisfied by the explicit
+unbounded function `D(x)=(-1)^k k`, `k=floor(log_b x)`. So the self-similarity is
+a *consequence* of the mex structure, not a sufficient condition. Route A as
+stated is dead; the mex structure must be used.
 
 ## Claims logged
 
-C0001-C0010; the ones that matter here are C0002 (the density split), C0003
-(the `O(1)` error bound), C0004 (it is not a property of the periodic rows) and
-C0005 (the exact reduction to a strip bound on A029901/A029902).
+- C0014: H&L Theorem 3.3 gives no error term; their Conjecture 5.1 is our strip bound, open.
+- C0015: exact self-similarity `D(x)+D(bx) in {-1,0,1}`.
+- C0016: strip bound ⟺ bounded discrepancy, via `A902(n)-a n = -a D(A902(n))`.
+- C0017: `A902(n)=f(n,n)+O(1)`, `A901(n)=2 A902(n)-n+O(1)`, `2a-1=b`.
+- C0018: indicator word has maximal factor complexity (not Sturmian).
+- C0019: exact integer cocycle `N(x)+N(floor(bx))=2x+{-1,0,1}`; alternating-sum formal solution.
+- C0020: NEGATIVE — the cocycle alone does not force D bounded (explicit counterexample).
 
 ## Next step
 
-Prove `|A029902(n) - a n| <= K` for an explicit computable `K`, with
-`a = 1 + sqrt(2)/2`. Equivalently, for A029901 about `b n`. This is the whole
-job: that one bound discharges (B1) of `GROUND_TRUTH/byrnes_audit.md` -- the
-single quantity Byrnes' proof leaves uncomputable -- and hence makes Byrnes
-effective. Brouwer's measured strips give the target's shape:
-`A029902(n) - a n in [-1.853, 0.940]` and `A029901(n) - b n in [-1.506, 1.493]`
-below `n = 130000`.
+Pursue **Route B (the diagonal bridge, C0017)** or augment the cocycle with the
+mex structure. Two concrete options:
 
-Before building machinery, novelty-check Hegarty & Larsson, INTEGERS 6 (2006)
-#A03 (`python -m GROUND_TRUTH.fetch_sources` to get it). They study greedy
-mex-like permutations under a constraint on `pi(n) - n`, get computable
-asymptotics "provided `M` and `S` have an asymptotic density", and connect them
-to Beatty sequences and Stolarsky interspersion arrays. Our split is a
-complementary Beatty-like pair generated by a greedy mex rule. If their
-Theorem 3.3 transfers with an error term, that error term *is* the strip bound.
-Log it `type: conjecture`, `novelty_checked: false` and let the referee decide.
+1. **(Augmented cocycle.)** The full functional description is
+   `D(x) - D(x-1) = [x in A902] - 1/a` together with the greedy mex generation
+   of A902 (which is exactly the 3-row recurrence restricted to diagonal
+   P-positions). The counterexample in C0020 violates the jump condition
+   (its jumps are not 0/1-valued in the right pattern). Test whether
+   jump-condition + cocycle + `e in {-1,0,1}` forces D bounded; if a
+   counterexample still exists, the mex *generation* (not just the jump pattern)
+   is the essential input.
+2. **(Diagonal strip via recurrence.)** `A902(n) = f(n,n) + O(1)` (C0017) means
+   the strip bound is equivalent to a strip bound on the diagonal `f(q,q) ~ a q`.
+   Byrnes' Lemma 5 gives the linear bound `f(r,r) <= 4r-1`; the recurrence
+   `f(q,q) = mex({f(a,q):a<q} u {f(q,b):b<q})` is a self-map that may be
+   contractive in the strip metric. Attack that directly.
 
-## The obvious first check is already done -- the strips saturate
-
-Phase 0 measured the running suprema over all 29289 stale rows (`n <= 29288`):
-
-```
-   n <=      sup|A029902(n) - a n|    sup|A029901(n) - b n|
-      10                    1.7574                  2.6863
-     100                    2.0381                  3.5492
-    1000                    2.1989                  3.7847
-    5000                    2.2482                  3.9077
-   10000                    2.4527                  3.9077
-   20000                    2.4868                  3.9077
-   29288                    2.4868                  3.9077
-```
-
-Both stop moving. And indexing from `n = 1` rather than `n = 0` reproduces
-Brouwer's published strips **exactly**: `A029901(n) - b n in [-1.506, 1.494]`
-against his `[-1.506, 1.493]`, and `A029902(n) - a n` has lower end `-1.853`
-against his `-1.853`. (His upper ends are slightly larger because he ran to
-`n < 130000`.) That is both a further validation of the solver and a fixing of
-the index convention -- use `n >= 1`.
-
-So the strip is bounded in practice with sup around 2.5 and 3.9. The target is
-to prove *some* explicit `K`, not to match these.
+Option 2 is the most likely to produce a constant and is closest to Island 01's
+proved Lemma 5 territory; option 1 is the more faithful renormalization route.
+Do whichever yields a *constant* first.
 
 ## Confidence
 
-Alive, and better posed than at the start of Phase 0 -- the target moved from
-"explain a constant" to "bound one sequence against one line", and the numerics
-for that bound are now measured and saturating rather than assumed. What would
-kill it: a proof route that can only deliver the density (`A029902(n)/n -> a`)
-without an error term, which is what the existing renormalisation arguments
-give and which is *not* enough. Judge any approach by whether it can produce a
-constant, and abandon it early if it cannot.
+Alive, and one dead end is now cleanly identified (the self-similarity alone is
+insufficient — this is real progress, not just a negative: it tells us the mex
+structure is the essential input, not a decorative consequence). The target is
+bounded discrepancy of one set, with the mex generation of A902 as the
+constraint. What would kill the thesis: if the augmented cocycle (jump condition
++ self-similarity) also admits an unbounded counterexample, then the full mex
+generation is needed and we should go straight to Route B's diagonal recurrence.

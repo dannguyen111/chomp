@@ -24,9 +24,35 @@ Both proofs have been read in full and the non-effective step is named.
   `python -m GROUND_TRUTH.fetch_sources` downloads every primary source into
   `GROUND_TRUTH/data/` (they are not committed -- the repo is public).
 
-## Your target, in order
+## (Z1) IS DONE -- session 1 closed it. Do not redo it.
 
-**(Z1-residual) -- start here. This is the cheapest real theorem in the problem.**
+`f(q,r) <= q + r + 1` for all `q >= r >= 0`, hence `max_q (f(q,r) - q) <= r + 1`.
+That is (Z1) with `C = 1`, and the near-diagonal route the rest of this file
+describes is **unnecessary**. The proof is four lines and does not even use the
+induction hypothesis on the values, only the cardinality of the mex set:
+
+> the mex is taken over `{f(a,r) : a<q} u {f(q,b) : b<r}`, at most `q+r` positive
+> integers, so one of `1..q+r+1` is missing. The `r>q` and stale branches are
+> immediate.
+
+Logged as **C0012** (lemma, open). Re-verified independently: 0 violations over
+the full table `q,r <= 400` and over all 20711 live rows to `r <= 50000`; tight
+at 402 cells (the whole `r=0` row). **`islands/01-recurrence/proofs/C0012.md`
+does not exist yet -- writing it is the first job of the next session.**
+
+C0013 chains this into an explicit `N(r) <= 2^(2^r poly(r))`. It is logged as a
+`conjecture`, not a lemma, because two gaps are open: the constant in the
+Zeilberger state count is unpinned, and it is unchecked whether the bound
+absorbs the preperiod `a_0(I_r)` of the instant-winner sequence without a
+further recursion. Read C0013's evidence field before building on it.
+
+Note also the reduction subtlety session 1 found: the *periodicity* statement
+needs `m = q-r, n = p-r`, whereas C0009 uses `n = p-q` for Byrnes' Lemma 5.
+Both are valid applications to different quantities. Do not conflate them.
+
+## The original target list (kept for context; (Z1) is now closed)
+
+**(Z1-residual) -- superseded by C0012 above.**
 
 Byrnes' **Lemma 5 is unconditional** and, in the 3-row reduction with the third
 row fixed (`k=0`, `m=q-r`, `n=p-q`, `|A|=3r-1`), says

@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import prompt, tools
+from .ledger import Ledger
 from .orclient import (
     EXPLORER_MODEL,
     Budget,
@@ -22,25 +23,52 @@ from .orclient import (
 )
 
 HANDOFF_NUDGE = (
-    "\n\n[HARNESS] You are at {pct:.0f}% of this session's token budget. Stop "
-    "exploring now. Append any claims to LEDGER/claims.jsonl, record failures in "
-    "LEDGER/dead_ends.md, update your island NOTES.md, and write HANDOFF.md in "
-    "the mandated format. Do not begin new work."
+    "\n\n[HARNESS] You are at {pct:.0f}% of this session's budget; the binding "
+    "limit is {which}. Stop exploring now and land your results in this order:\n"
+    "  1. Append EVERY claim to LEDGER/claims.jsonl via harness.ledger. A claim "
+    "that exists only in your handoff does not exist: the next session reads the "
+    "ledger, and your handoff will be overwritten.\n"
+    "  2. Record failed ideas in LEDGER/dead_ends.md, with the reason.\n"
+    "  3. Update islands/{island}/NOTES.md.\n"
+    "  4. Write islands/{island}/HANDOFF.md in the mandated format.\n"
+    "Do not begin new work."
+)
+
+LEDGER_NUDGE = (
+    "\n\n[HARNESS] You have appended {n} claims to the ledger this session and "
+    "the session is ending. If you established anything at all, including a "
+    "negative result, append it NOW with harness.ledger before writing the "
+    "handoff. Prose in HANDOFF.md is not a ledger entry and does not survive."
 )
 
 FINAL_NUDGE = (
-    "\n\n[HARNESS] Budget exhausted. Write HANDOFF.md right now, this turn, "
-    "using write_file. Nothing else."
+    "\n\n[HARNESS] Budget exhausted. Write islands/{island}/HANDOFF.md right "
+    "now, this turn, using write_file. Nothing else."
 )
+
+STATUS = (
+    "\n\n[HARNESS] budget: tokens {out:,}/{maxout:,} ({pout:.0f}%) | spend "
+    "${spend:.2f}/${maxspend:.2f} ({pspend:.0f}%) | time {mins:.0f}/{maxmins} min "
+    "({pmins:.0f}%) | claims logged this session: {n}"
+)
+
+
+def _ledger_ids(root: Path) -> set[str]:
+    """Claim ids currently on disk. Used to tell the explorer, every turn, how
+    many claims it has actually landed -- prose in a handoff is not a claim."""
+    try:
+        return {c.id for c in Ledger(root / "LEDGER").raw()}
+    except Exception:                                   # noqa: BLE001
+        return set()
 
 
 def run(
     root: Path,
     island: str,
     *,
-    max_output_tokens: int = 220_000,
-    max_minutes: int = 240,
-    session_spend_cap: float = 3.00,
+    max_output_tokens: int = 1_430_000,
+    max_minutes: int = 330,
+    session_spend_cap: float = 5.00,
     temperature: float = 0.7,
 ) -> dict:
     session_id = datetime.now(timezone.utc).strftime("S%Y%m%dT%H%M")
@@ -53,6 +81,7 @@ def run(
     client = OpenRouter(budget)
     start_spend = budget.spent
     started = time.time()
+    claims_at_start = _ledger_ids(root)
 
     messages = prompt.build(root, island, session_id)
     transcript = run_dir / "transcript.jsonl"
@@ -72,18 +101,29 @@ def run(
         turn += 1
         elapsed_min = (time.time() - started) / 60
         session_spend = budget.spent - start_spend
-        pct = 100 * out_tokens / max_output_tokens
-
-        over = (
-            out_tokens >= max_output_tokens
-            or elapsed_min >= max_minutes
-            or session_spend >= session_spend_cap
-        )
+        # Pace against whichever limit is closest, not output tokens alone. A
+        # session bounded by wall clock or spend otherwise gets no warning at
+        # all and simply stops -- which is how session 1 ended with its results
+        # stranded in handoff prose instead of in the ledger.
+        fracs = {
+            "output tokens": out_tokens / max_output_tokens,
+            "wall clock": elapsed_min / max_minutes,
+            "spend": session_spend / session_spend_cap,
+        }
+        which = max(fracs, key=fracs.get)
+        pct = 100 * fracs[which]
+        over = pct >= 100
+        n_claims = len(_ledger_ids(root) - claims_at_start)
 
         if over and nudged:
-            messages.append({"role": "user", "content": FINAL_NUDGE})
+            messages.append({"role": "user",
+                             "content": FINAL_NUDGE.format(island=island)})
         elif (over or pct >= 85) and not nudged:
-            messages.append({"role": "user", "content": HANDOFF_NUDGE.format(pct=pct)})
+            messages.append({"role": "user", "content": HANDOFF_NUDGE.format(
+                pct=pct, which=which, island=island)})
+            if n_claims == 0:
+                messages.append({"role": "user",
+                                 "content": LEDGER_NUDGE.format(n=n_claims)})
             nudged = True
 
         try:
@@ -148,6 +188,15 @@ def run(
                 "content": result,
             })
 
+        # Live budget readout. Appended at the END of the conversation, so the
+        # cached prefix is untouched. Session 1 had no idea which limit it was
+        # against and guessed wrong, so it truncated its own write-up.
+        messages.append({"role": "user", "content": STATUS.format(
+            out=out_tokens, maxout=max_output_tokens, pout=100 * fracs["output tokens"],
+            spend=session_spend, maxspend=session_spend_cap,
+            pspend=100 * fracs["spend"], mins=elapsed_min, maxmins=max_minutes,
+            pmins=100 * fracs["wall clock"], n=n_claims)})
+
     summary = {
         "session": session_id,
         "island": island,
@@ -158,6 +207,8 @@ def run(
         "total_spent": round(budget.spent, 4),
         "remaining": round(budget.remaining, 4),
         "handoff_written": (root / "islands" / island / "HANDOFF.md").exists(),
+        "claims_appended": sorted(_ledger_ids(root) - claims_at_start),
+        "stopped_on": which,
     }
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2))
     log({"event": "end", **summary})
@@ -165,6 +216,10 @@ def run(
     print("\n" + json.dumps(summary, indent=2))
     if not summary["handoff_written"]:
         print("\n!! NO HANDOFF WRITTEN -- read the transcript before spending more.")
+    if not summary["claims_appended"]:
+        print("\n!! NO CLAIMS APPENDED -- a session that logged nothing to the "
+              "ledger left nothing behind. Read the handoff and the transcript "
+              "before spending more.")
     return summary
 
 
@@ -172,9 +227,9 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=".")
     ap.add_argument("--island", default="01-recurrence", choices=list(prompt.ISLANDS))
-    ap.add_argument("--max-output-tokens", type=int, default=220_000)
-    ap.add_argument("--max-minutes", type=int, default=240)
-    ap.add_argument("--session-cap", type=float, default=3.00)
+    ap.add_argument("--max-output-tokens", type=int, default=1_430_000)
+    ap.add_argument("--max-minutes", type=int, default=330)
+    ap.add_argument("--session-cap", type=float, default=5.00)
     ap.add_argument("--temperature", type=float, default=0.7)
     a = ap.parse_args()
     run(

@@ -19,7 +19,7 @@ fi
 
 run() {
   python -m harness.session \
-    --root . --island "$ISLAND" --session-cap "${SESSION_CAP:-3.00}"
+    --root . --island "$ISLAND" --session-cap "${SESSION_CAP:-5.00}"
 }
 
 # flock is absent on Git Bash for Windows and on stock macOS. mkdir is atomic

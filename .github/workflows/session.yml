@@ -19,7 +19,7 @@ on:
         default: "auto"
       session_cap:
         description: "USD ceiling for this one session"
-        default: "3.00"
+        default: "5.00"
 
 permissions:
   contents: write
@@ -31,7 +31,11 @@ concurrency:
 jobs:
   session:
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    # GitHub hard-kills a hosted job at 360 minutes. The session is capped at
+    # 330 below, leaving 25 minutes of slack for setup, the commit and the push
+    # -- a job killed by the platform may never reach the commit step, which
+    # would lose the ledger, the handoff and the transcript together.
+    timeout-minutes: 355
 
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +52,7 @@ jobs:
           echo "Remaining: \$$REMAIN"
           # Below one session's worth, stop rather than start something that
           # will be cut off mid-proof.
-          python -c "import sys;sys.exit(0 if $REMAIN >= 3.0 else 1)" \
+          python -c "import sys;sys.exit(0 if $REMAIN >= 5.0 else 1)" \
             && echo "go=true" >> "$GITHUB_OUTPUT" \
             || { echo "Budget too low for a full session."; echo "go=false" >> "$GITHUB_OUTPUT"; }
 
@@ -93,8 +97,9 @@ jobs:
           python -m harness.session \
             --root . \
             --island "${{ steps.pick.outputs.island }}" \
-            --session-cap "${{ inputs.session_cap || '3.00' }}" \
-            --max-minutes 300
+            --session-cap "${{ inputs.session_cap || '5.00' }}" \
+            --max-output-tokens 1430000 \
+            --max-minutes 330
 
       - name: Commit state
         if: always() && steps.gate.outputs.go == 'true'

@@ -1,5 +1,51 @@
 # Where Byrnes loses effectivity
 
+> ## ERRATA 2026-09-21 -- read before acting on this document
+>
+> An adversarial re-read of both primary sources found one substantive error in
+> this audit and two overstatements. Every quotation below was checked verbatim
+> and is correct; the error is in a specialisation, not a citation.
+>
+> **1. The Lemma 5 coordinate was wrong, and (Z1) is therefore already proved.**
+> Section 3 specialises Byrnes' Lemma 5 with `n = p - q`. Byrnes' own
+> definition of `A_{m,n}` plus his assumption (1) force `C` to be the row-2 tail
+> and `D` the row-1 tail, hence `m = q - r` and **`n = p - r`**. With the
+> correct coordinate Lemma 5 gives
+>
+> ```
+>     p - q  <=  3r - 1     for every P-position (p,q,r), UNIFORMLY in q
+> ```
+>
+> so `M_r <= 3r - 2` outright. The "degrades for large `q`" problem described in
+> section 3 is an artefact of the wrong coordinate and does not exist. **(Z1) is
+> closed, with `C = 3`, by a lemma already in print.** See claim C0021 and
+> `islands/01-recurrence/proofs/C0021.md`. Section 3's instruction to open
+> island 01 on "the residual half of (Z1)" is withdrawn.
+>
+> **2. The Zeilberger state count is this document's, not Zeilberger's.** He
+> writes only *"it follows that there are only finitely many states"* and *"the
+> 'theoretical' upper bound for the period is enormous"*; he never counts them,
+> and his algorithm section is titled "A Posteriori Justification" and is
+> guess-and-verify. The count below is a correct derivation but must not be
+> cited to him.
+>
+> **3. That count omits the preperiod.** The pigeonhole can only start once
+> `I_a` is periodic, at `a_0(r)`. The correct form is
+> `N(r) + period(r) <= a_0(r) + p_r (M_r+1)^(M_r)` -- a recursion over `r`, not
+> the closed form displayed in section 3.
+>
+> **4. "Exactly one step" (section 1) is too strong.** It holds for the
+> quantitative chain (Lemma 4 converse -> `T` -> `W`). Two further
+> non-effective steps exist: Lemma 10's enumeration (p.17), which also
+> presupposes deciding `k in Q(A)`; and the reduction to assumption (3) on
+> pp.15-16, which enlarges `A` by "a finite number of elements" with no bound --
+> and `|A|` sits in the exponent of `4^(|A|+k)`.
+>
+> What survives unscathed: every quotation; Byrnes' Lemma 9 pigeonhole being
+> genuinely explicit; `|A| = 3r-1`; `f(r,r) <= 4r-1`; Zeilberger's coordinate
+> reading; and this document's core thesis, that **the pigeonholes are not the
+> problem**.
+
 **Sources read in full.**
 
 - S. Byrnes, *Poset-Game Periodicity*, Intel Science Talent Search version,
@@ -33,7 +79,7 @@ converse direction of Lemma 4**, which produces two integers `M` and `N` out of
 the bare *finiteness* of a set, with no bound on either. That one step is the
 sole source of the non-computable quantity `W(A,k)`, and `W(A,k)` is the **only**
 non-computable term in the final bound. The famous pigeonhole (Lemma 9) is
-**not** the problem — it is fully explicit.
+**not** the problem -- it is fully explicit.
 
 **Zeilberger's 3-row specialisation does not lose effectivity at all.** Its
 pigeonhole is over an explicitly counted state space. What it needs instead are
@@ -43,13 +89,14 @@ on the values of `p-q`, and a bound on the lcm of the periods below `r`.
 So the sharp question for this project is not "where is the non-effective step"
 in the singular. It is:
 
-> **(Z1)** Give an explicit `C` with `f(q,r) - q <= C r` for all `q >= r >= 1`.
-> **(Z2)** Give an explicit bound on `lcm{period(c) : c < r}`.
+> ~~**(Z1)** Give an explicit `C` with `f(q,r) - q <= C r` for all
+> `q >= r >= 1`.~~ **CLOSED** -- see ERRATA item 1. Byrnes' Lemma 5, with the
+> correct coordinate `n = p - r`, gives `p - q <= 3r - 1` uniformly in `q`.
+> The text below claiming only the `q = r` case is proved is wrong.
 >
-> These two together already yield an explicit (astronomical) bound on `N(r)`
-> through Zeilberger's argument, with nothing else added. **(Z1) is already
-> proved at `q = r`** by Byrnes' own Lemma 5 (section 3 below); only the
-> large-`q` half is missing.
+> **(Z2)** Give an explicit bound on `lcm{period(c) : c < r}`. This is the only
+> remaining gap for a closed form. For effectivity alone there is no gap at
+> all: `M_r` and `p_r` are computed from the already-solved rows `c < r`.
 
 and, on the Byrnes route,
 
@@ -96,7 +143,7 @@ identification in mind; everything below turns on it.
 says the set of positions with g-value `k` is finite; each such position is a
 finite subset of `X`; so their union is finite; so some `c_M` and some `d_N`
 lie outside all of them. Perfectly correct, and perfectly useless
-computationally — *"this set is finite"* is exactly the hypothesis that carries
+computationally -- *"this set is finite"* is exactly the hypothesis that carries
 no bound. To compute `M` and `N` you would have to already possess the complete
 list of positions with g-value `k`, which is what you are trying to determine.
 
@@ -130,7 +177,7 @@ Two things worth noticing, because they narrow the target:
 
 1. **The `n_m` are effective, contrary to how the passage reads.** Byrnes cites
    Lemma 2 (distinctness of `g(A_{m,n})` over `n`), which alone gives no bound.
-   But **Lemma 5** — *"If `g(A_{m,n}) = k`, then `n - m <= |A| + k`"* — is
+   But **Lemma 5** -- *"If `g(A_{m,n}) = k`, then `n - m <= |A| + k`"* -- is
    unconditional, so `n_m <= m + |A| + k + 1` outright. Hence
    `T(A,k) <= max(m' + |A| + k + 1, n' + 1)`.
 2. Therefore **the entire non-effectivity of the paper reduces to bounding the
@@ -138,7 +185,7 @@ Two things worth noticing, because they narrow the target:
 
 ### 1.4 The pigeonhole is *not* where effectivity dies (Lemma 9, p. 14)
 
-This is worth stating loudly because the obvious guess — "the pigeonhole" — is
+This is worth stating loudly because the obvious guess -- "the pigeonhole" -- is
 wrong, and a session that goes looking there will waste itself.
 
 > Let `p = lcm({p_{B,j} | B in H, j <= k, j not in Q(B)} u {p_{A,j} | j < k, j not in Q(A)})`
@@ -164,7 +211,7 @@ inequalities:
     N_{A,k}  <=  max(sub-N's) + |A| + k + max(|A|+k, W(A,k)) + 4^{|A|+k} * p
 ```
 
-Every symbol on the right is computable from `(A, k)` and the induction —
+Every symbol on the right is computable from `(A, k)` and the induction --
 **except `W(A,k)`**. That is the whole audit of Byrnes in one line:
 
 > **Give an explicit bound on `W(A,k)` and Byrnes' theorem becomes effective,
@@ -202,8 +249,8 @@ side. Both routes bottom out at one question.
 ## 2. Zeilberger: a different proof with a different weak point
 
 Zeilberger's exposition is not a retelling of Byrnes. It re-proves the 3-row
-case through a finite-state argument, and — this is the part that changes what
-this project should do — **his pigeonhole is explicit.**
+case through a finite-state argument, and -- this is the part that changes what
+this project should do -- **his pigeonhole is explicit.**
 
 His frame: `[c,a,b]` with `c` columns of height 3, `a` of height 2, `b` of
 height 1, so `a = q - r` and **`b = p - q`**. `B_C(a)` is the unique `b` making
@@ -266,7 +313,7 @@ posteriori:
 
 `M_r` is, up to 1, the largest `p - q` that occurs anywhere in rows below `r`.
 (Note this is *not* the same as the largest diagonal entry. Brouwer proves that
-`f(q,q)` is the largest element of column `q` — `r` varying, `q` fixed — which
+`f(q,q)` is the largest element of column `q` -- `r` varying, `q` fixed -- which
 bounds `f(q,c) - q <= f(q,q) - q`, and that right-hand side grows with `q`. The
 solver confirms the two differ: `max_q (f(q,c)-q)` exceeds `f(c,c)-c` for 221 of
 the 2001 columns `c <= 2000`, though never by more than **2**.)
@@ -274,7 +321,7 @@ the 2001 columns `c <= 2000`, though never by more than **2**.)
 Measured: `max_q (f(q,r) - q) / r` is at most **2**, attained at `r = 1`, and
 tends to `1/sqrt(2) = 0.7071` (it is `0.70800` at `r = 2000`). So `C = 2` is
 true with margin, and the real content of (Z1) is only that the maximum over `q`
-is not attained far out — see section 3.
+is not attained far out -- see section 3.
 
 (Z2) is MISSION.md section 4's stated *secondary* target. Observed periods to
 `r = 50000` are `{1,2,3,4,6,8,9}`, whose lcm is 72.
@@ -286,17 +333,17 @@ is not attained far out — see section 3.
 Three statements, in increasing order of difficulty. Each is stated so that
 proving it is a self-contained job.
 
-**(B1) — the Byrnes gap, stated for 3-row Chomp.**
+**(B1) -- the Byrnes gap, stated for 3-row Chomp.**
 > Exhibit a computable `K` such that for every `r` whose row is stale (only
 > finitely many P-positions `(p,q,r)`), every such P-position has `q <= K(r)`.
 
 This is `W(A,0)` and it is the *only* thing Byrnes' proof does not supply.
 Equivalently, in Lemma 4's terms: bound the least witness `(m', n')`.
 Measured: `K(r) = sqrt(2) r + 4` suffices for all `r <= 50000`
-(`GROUND_TRUTH/seed_check.md`, section 5). Anything computable will do — `3r`,
+(`GROUND_TRUTH/seed_check.md`, section 5). Anything computable will do -- `3r`,
 `r^2`, `2^r`.
 
-**(Z1) — the Zeilberger gap, and it is half done already.**
+**(Z1) -- the Zeilberger gap, and it is half done already.**
 > Exhibit an explicit `C` with `f(q,r) - q <= C r` for all `q >= r >= 1`.
 
 **Byrnes' Lemma 5 already gives the `q = r` case, unconditionally.** In his
@@ -326,14 +373,14 @@ What is **missing** is only that `n <= m + |A|` degrades as `m` grows: it bounds
 `f(q,r) - q` by `(q - r) + 3r - 1`, which is `O(r)` at `q = r` but `O(q)` for
 large `q`. So the residual content of (Z1) is exactly:
 
-> Show that `max_q (f(q,r) - q)` is attained at, or within `O(1)` of, `q = r` —
+> Show that `max_q (f(q,r) - q)` is attained at, or within `O(1)` of, `q = r` --
 > or bound it any other way.
 
 The data says the excess over `f(r,r) - r` is **never more than 2** for
 `r <= 2000`. This is a small, sharply posed, checkable statement, and it is the
 cheapest real theorem visible anywhere in this problem.
 
-**(Z2) — the period gap.**
+**(Z2) -- the period gap.**
 > Exhibit an explicit bound on `lcm{period(c) : c < r}`.
 
 Open (MISSION.md section 4, secondary target). Note that a bound on the
@@ -366,7 +413,7 @@ hand, and (Z1) alone looks tractable.
 
 The distance from `r^{Theta(r)}` to `sqrt(2) r` is the real content of the
 problem. MISSION.md section 5 is explicit that closing it is *not* the priority
-— *"Effectivity beats sharpness"* — and this audit says the effectivity half is
+-- *"Effectivity beats sharpness"* -- and this audit says the effectivity half is
 closer than the mission statement assumes.
 
 ---
@@ -377,12 +424,12 @@ closer than the mission statement assumes.
 Open on the residual half of **(Z1)**: Byrnes' Lemma 5 already gives
 `f(q,r) - q <= (q-r) + 3r - 1`, so all that is needed is that the maximum of
 `f(q,r) - q` over `q` is not attained far from `q = r` (observed excess over
-`f(r,r) - r` is at most 2 for `r <= 2000`). Brouwer's two proved lemmas — the
+`f(r,r) - r` is at most 2 for `r <= 2000`). Brouwer's two proved lemmas -- the
 diagonal is the maximum of its column, and there are at least `p/3` P-positions
-`(q,q,r)` with `q <= p` — are the natural starting materials. If that lands,
+`(q,q,r)` with `q <= p` -- are the natural starting materials. If that lands,
 write out the Zeilberger chain to get an explicit `N(r) <= r^{O(r)}` conditional
-only on (Z2), and log it. Then attack **(B1)** — a bound on how far a stale row
-can run — which is the single quantity Byrnes leaves open and is the more
+only on (Z2), and log it. Then attack **(B1)** -- a bound on how far a stale row
+can run -- which is the single quantity Byrnes leaves open and is the more
 interesting of the two.
 
 **Island 02 (renormalisation).** The `sqrt(2)` is not a fact about the
@@ -390,7 +437,7 @@ non-trivially-periodic rows; it is a fact about *all* rows, and for stale rows
 it is *equivalent*, by an exact identity, to strip bounds on A029901 and A029902
 about the Friedman-Landsberg lines `b n` and `a n` with `b = sqrt(2) a`
 (`GROUND_TRUTH/seed_check.md`, section 5). So the renormalisation target is not
-"explain `sqrt(2)`" — it is: **prove a strip bound `|A029902(n) - a n| <= K` for
+"explain `sqrt(2)`" -- it is: **prove a strip bound `|A029902(n) - a n| <= K` for
 an explicit `K`.** That single bound delivers (B1), hence effective Byrnes, and
 it is exactly the kind of statement the renormalisation picture is supposed to
 produce. Brouwer's own measured strips (`[-1.853, +0.940]` and

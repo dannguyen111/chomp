@@ -4,91 +4,81 @@ Phase 0 findings you should not re-derive. Everything here is backed by
 `GROUND_TRUTH/byrnes_audit.md` and `GROUND_TRUTH/seed_check.md`; read those
 before writing any code.
 
-## The localisation is already done -- do not redo it
+## The localisation is done -- do not redo it
 
-Both proofs have been read in full and the non-effective step is named.
+Both proofs have been read in full, twice, and the second read corrected the
+first. See the ERRATA block at the top of `GROUND_TRUTH/byrnes_audit.md`.
 
-- **Byrnes (INTEGERS 3 (2003) #G03).** Effectivity dies in exactly one place:
-  the **converse direction of Lemma 4**, which produces integers `M`, `N` out of
-  the bare finiteness of `{(m,n) : g(A_{m,n}) = k}`. That is the sole source of
-  `T(A,k)`, hence of `W(A,k)`, and **`W(A,k)` is the only non-computable term in
-  the final bound**.
+- **Byrnes (INTEGERS 3 (2003) #G03).** The quantitative chain loses
+  effectivity at the **converse direction of Lemma 4**, which produces `M`, `N`
+  from the bare finiteness of `{(m,n) : g(A_{m,n}) = k}`; that is the sole
+  source of `T(A,k)` and hence `W(A,k)`. Two further non-effective steps exist
+  outside that chain (C0023): Lemma 10's enumeration (p.17), which presupposes
+  deciding `k in Q(A)`; and the reduction to assumption (3) on pp.15-16, which
+  enlarges `A` with no bound -- and `|A|` sits in the exponent of `4^(|A|+k)`.
 - **The Lemma 9 pigeonhole is NOT the problem.** It is counted and explicit:
-  `p_{A,k} <= 4^(|A|+k) p` and `N_{A,k} <= N + 4^(|A|+k) p`. Going after it is
-  the single most likely way to waste this island's budget.
-- **Zeilberger's exposition is a different proof and has no non-effective step
-  at all.** Its state space is counted, giving
-  `N(r) + period(r) <= p_r (M_r+1)^(M_r)`.
+  `p_{A,k} <= 4^(|A|+k) p` and `N_{A,k} <= N + 4^(|A|+k) p`. Verified against
+  the paper. Going after it is the single most likely way to waste a session.
+- **Zeilberger's exposition is a different proof with no non-effective step.**
+  But he never counts the state space: the count
+  `N(r) + period(r) <= a_0(r) + p_r (M_r+1)^(M_r)` is the audit's own
+  derivation, and it needs the preperiod term `a_0(r)`, making it a recursion
+  over `r` rather than a closed form (C0023). Do not cite the count to him.
 - The PDF at the URL in MISSION.md is **truncated at 6 pages**. Use the TeX
   source `https://sites.math.rutgers.edu/~zeilberg/mamarim/mamarimTeX/byrnes.tex`.
   `python -m GROUND_TRUTH.fetch_sources` downloads every primary source into
   `GROUND_TRUTH/data/` (they are not committed -- the repo is public).
 
-## (Z1) IS DONE -- session 1 closed it. Do not redo it.
+## BOTH HALVES OF (Z1) ARE CLOSED. Do not work on it.
 
-`f(q,r) <= q + r + 1` for all `q >= r >= 0`, hence `max_q (f(q,r) - q) <= r + 1`.
-That is (Z1) with `C = 1`, and the near-diagonal route the rest of this file
-describes is **unnecessary**. The proof is four lines and does not even use the
-induction hypothesis on the values, only the cardinality of the mex set:
+Two independent results, from two different directions, and neither needs
+anything further:
 
-> the mex is taken over `{f(a,r) : a<q} u {f(q,b) : b<r}`, at most `q+r` positive
-> integers, so one of `1..q+r+1` is missing. The `r>q` and stale branches are
-> immediate.
+**C0012 (session 1).** `f(q,r) <= q + r + 1`, hence `max_q (f(q,r)-q) <= r+1`.
+Four-line induction; branch (C) takes a mex over at most `q+r` positive
+integers, so one of `1..q+r+1` is missing. Proof written out in
+`proofs/C0012.md`. Re-verified: 0 violations over the full table `q,r<=400`
+and all 20711 live rows to `r<=50000`; tight at 402 cells (the row `r=0`).
 
-Logged as **C0012** (lemma, open). Re-verified independently: 0 violations over
-the full table `q,r <= 400` and over all 20711 live rows to `r <= 50000`; tight
-at 402 cells (the whole `r=0` row). **`islands/01-recurrence/proofs/C0012.md`
-does not exist yet -- writing it is the first job of the next session.**
+**C0021 (2026-09-21 correction).** Byrnes' Lemma 5, correctly specialised,
+gives `p - q <= 3r - 1` for every P-position, uniformly in `q`. Proof in
+`proofs/C0021.md`.
 
-C0013 chains this into an explicit `N(r) <= 2^(2^r poly(r))`. It is logged as a
-`conjecture`, not a lemma, because two gaps are open: the constant in the
-Zeilberger state count is unpinned, and it is unchecked whether the bound
-absorbs the preperiod `a_0(I_r)` of the instant-winner sequence without a
-further recursion. Read C0013's evidence field before building on it.
+C0012 is the sharper of the two (`r+1` against `3r-1`). C0021 matters because
+it corrects a **wrong coordinate in the Phase 0 audit**: C0009 read Byrnes'
+`n` as `p-q`, but his assumption (1) forces `n = p-r`. The "residual half of
+(Z1)" that the Phase 0 notes set as this island's opening target was an
+artefact of that slip and never existed. C0009 and C0010 are superseded; read
+the ERRATA block at the top of `GROUND_TRUTH/byrnes_audit.md` before using
+that document.
 
-Note also the reduction subtlety session 1 found: the *periodicity* statement
-needs `m = q-r, n = p-r`, whereas C0009 uses `n = p-q` for Byrnes' Lemma 5.
-Both are valid applications to different quantities. Do not conflate them.
+C0013 chains C0012 into an explicit `N(r) <= 2^(2^r poly(r))`. It is logged as
+a `conjecture`, not a lemma, and **its displayed closed form is wrong**: the
+Zeilberger state count omits the preperiod `a_0(r)` of the instant-winner
+sequence, so the true shape is the recursion
+`N(r) + period(r) <= a_0(r) + p_r (M_r+1)^(M_r)` (C0023).
 
-## The original target list (kept for context; (Z1) is now closed)
+## What is actually left
 
-**(Z1-residual) -- superseded by C0012 above.**
+Per C0022, exactly one gap for a closed-form bound:
 
-Byrnes' **Lemma 5 is unconditional** and, in the 3-row reduction with the third
-row fixed (`k=0`, `m=q-r`, `n=p-q`, `|A|=3r-1`), says
+> **(Z2)** an explicit bound on `lcm{period(c) : c < r}`.
 
-```
-    (p - q) - (q - r)  <=  3r - 1       for every P-position (p,q,r)
-```
+And for *effectivity* alone, nothing: on the Zeilberger route `M_r` and `p_r`
+are computed from the already-solved rows `c < r`, so the procedure is already
+effective. (Z2) buys an a priori closed form, not computability. Be precise
+about which of the two you are claiming.
 
-verified against the solver over every P-position with `q,r <= 2000`, tight at
-`(3,1,1)`. At `q=r` this already gives `f(r,r) <= 4r - 1`, explicit and proved.
-What is missing is only that the bound degrades for large `q`. So:
+The remaining worthwhile targets, in order:
 
-> Prove that `max_q (f(q,r) - q)` is attained at, or within `O(1)` of, `q = r` --
-> or bound `max_q (f(q,r) - q)` by `C r` any other way.
-
-Data: the max exceeds `f(r,r) - r` by **at most 2** over all `r <= 2000`, and
-`max_q (f(q,r)-q)/r` is at most 2 (at `r=1`), tending to `1/sqrt(2)`.
-Brouwer's two proved lemmas are the natural materials: *the diagonal `f(q,q)` is
-the largest element of column `q`*, and *for each `p` there are at least `p/3`
-P-positions `(q,q,r)` with `q <= p`*. Both are on his page with proofs.
-
-**(then) write out the chain.** (Z1) plus a bound on `p_r = lcm{period(c):c<r}`
-gives, through Zeilberger's argument and nothing else,
-`N(r) <= p_r (C r + 2)^(C r + 1)` -- an explicit computable bound of the form
-`r^(O(r))`. MISSION section 4 counts *any* computable form as a success. Writing
-this out carefully, with the constant pinned, is a real deliverable and is worth
-logging even though the bound is astronomical.
-
-**(B1) -- the harder and more interesting one.**
-
-> Exhibit a computable `K` such that for every **stale** row `r` (finitely many
-> P-positions), every P-position `(p,q,r)` has `q <= K(r)`.
-
-This *is* `W(A,0)`. It is the one thing Byrnes leaves uncomputable, and an
-explicit `K` of any shape (`3r`, `r^2`, `2^r`) makes his theorem effective with
-no other change. Measured: `K(r) = sqrt(2) r + 4` suffices for all `r <= 50000`.
+1. **(Z2).** Observed periods to `r=50000` are `{1,2,3,4,6,8,9}`, lcm 72. A
+   bound on the lcm suffices; you do not need to bound the periods themselves.
+2. **Write the corrected chain out.** With `M_r <= min(r+1, 3r-2)` from C0012,
+   the preperiod-corrected recursion of C0023, and (Z2), produce a single
+   explicit `N(r) <= ...` and log it as a lemma with a proof file.
+3. **(B1)**, a computable `K(r)` bounding the last `q` at which a stale row
+   carries a P-position. Still open for Byrnes' proof specifically, and the
+   more interesting question. Note it is a threshold in `p-r`, not in `q`.
 
 ## Facts about `f` you can use without recomputing
 

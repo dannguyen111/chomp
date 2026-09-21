@@ -17,6 +17,7 @@ import argparse
 import json
 import re
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 
 from . import tools
@@ -148,9 +149,13 @@ def referee(root: Path, claim_id: str, session: str = "referee",
               f"this tells it what answer is wanted. Recorded in the verdict; "
               f"use `make_refbox --statement` for a clean run.")
     refusals = 0
+    # What the model is actually shown. build_box() applies the restatement to
+    # its own copy for the box file; the wired path builds its own messages, so
+    # it has to be applied here too or only the box would be clean.
+    submitted = replace(claim, statement=restated) if restated else claim
 
     for temp in (0.3, 0.8):
-        messages = build_messages(root, claim, proof, deps)
+        messages = build_messages(root, submitted, proof, deps)
         # The referee gets tools so it can actually hunt counterexamples.
         for _ in range(40):
             if budget.spent - start_spend >= max_spend:

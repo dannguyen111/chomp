@@ -1,0 +1,25 @@
+{
+  "claim": "C0021",
+  "agreed": true,
+  "final": "reject",
+  "sandboxed": true,
+  "restated": "For every P-position (p,q,r) of 3-row Chomp with r >= 1, p - q <= 3r - 1. Equivalently, for each fixed r, f(q,r) - q is at most 3r - 1 for every q >= r.",
+  "ledger_statement": "CORRECTION of C0009 and (Z1). Byrnes' Lemma 5, correctly specialised to 3-row Chomp with the third row fixed, gives p - q <= 3r - 1 for EVERY P-position (p,q,r), uniformly in q. The embedding forced by Byrnes' assumption (1) is C = the row-2 tail, D = the row-1 tail, A = the 3r-1 cells of columns 1..r minus the poison, giving m = q-r and n = p-r. C0009 used n = p-q, which yields the weaker true statement (p-q)-(q-r) <= 3r-1 and a spurious (q-r) term that appears to grow with q. Consequence: (Z1) is NOT half-proved, it is fully proved in print with C = 3, and M_r <= 3r-2. The 'residual half of (Z1)' that the Phase 0 audit set as island 01's opening target does not exist.",
+  "submission_leaks": [],
+  "escape_attempts_blocked": 6,
+  "spend": 0.2452,
+  "verdicts": [
+    {
+      "disposition": "reject",
+      "gap_description": "referee emitted no parseable verdict",
+      "confidence": "low",
+      "_temperature": 0.3
+    },
+    {
+      "disposition": "reject",
+      "gap_description": "referee emitted no parseable verdict",
+      "confidence": "low",
+      "_temperature": 0.8
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "claim": "C0012",
+  "agreed": true,
+  "final": "reject",
+  "sandboxed": true,
+  "restated": "For all integers q >= r >= 0, f(q,r) <= q + r + 1. Consequently, for each fixed r the quantity f(q,r) - q is at most r + 1 for every q >= r.",
+  "ledger_statement": "For all q >= r >= 0, f(q,r) <= q + r + 1. Proof: induction over the three branches of the recurrence. In the mex branch the set {f(a,r):a<q} u {f(q,b):b<r} has at most q+r elements, so among the q+r+1 positive integers 1..q+r+1 one is missing and the mex is at most q+r+1; the r>q branch gives f(q,q) <= 2q+1 <= q+r+1; the stale branch gives f(q-1,r) <= q+r. Corollary: max_q (f(q,r)-q) <= r+1, which discharges (Z1) of byrnes_audit.md with C=1.",
+  "submission_leaks": [],
+  "escape_attempts_blocked": 10,
+  "spend": 0.1791,
+  "verdicts": [
+    {
+      "disposition": "reject",
+      "gap_description": "referee emitted no parseable verdict",
+      "confidence": "low",
+      "_temperature": 0.3
+    },
+    {
+      "disposition": "reject",
+      "gap_description": "referee emitted no parseable verdict",
+      "confidence": "low",
+      "_temperature": 0.8
+    }
+  ]
+}

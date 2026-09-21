@@ -28,10 +28,16 @@
       "severity": "novelty",
       "status": "NOTED",
       "detail": "inconclusive; nearest published statements are Sheiner Lemma 2.3(a) and Lemma 4.1. Reviewer suggests treating it as folklore since it is a one-line pigeonhole with no Chomp-specific content."
+    },
+    {
+      "severity": "convention",
+      "status": "CLARIFIED",
+      "detail": "reviewer counted 20712 live rows to r=50000 against the claimed 20711. Not an error: r=0 is live with constant d=1, and the project's range convention is r >= 1. Made explicit in the proof file rather than changing either number."
     }
   ],
   "counterexample_search": {
     "result": "no counterexample",
-    "range": "independent Python reimplementation of the recurrence cross-checked against the solver on all 103041 cells with q,r<=320 (0 mismatches); statement (P) verified on the full grid q,r<=4000 (~16M cells, including every r>q cell); columns r=0..10, 402, 5000, 6541, 8767, 10000, 15000, 18583, 19999, 20000, 30000 for all q<=2r+2000; full census to r=20000, all 8285 live rows"
-  }
+    "range": "independent Python reimplementation of the recurrence cross-checked against the solver on all 103041 cells with q,r<=320 (0 mismatches); statement (P) verified on the full grid q,r<=4000 (~16M cells, including every r>q cell); columns r=0..10, 402, 5000, 6541, 8767, 10000, 15000, 18583, 19999, 20000, 30000 for all q<=2r+2000; full census to r=20000, all 8285 live rows; ADDENDUM -- the reviewer's background census to r<=50000 completed after hand-back and closes the one check it had flagged as incomplete: every live row's eventual f(q,r)-q value checked against r+1 over the full r<=50000 census, 0 violations"
+  },
+  "disposition_after_addendum": "accept_with_gaps (unchanged)"
 }

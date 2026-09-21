@@ -92,12 +92,23 @@ def build_box(root: Path, claim, out: Path, census=(), statement=None):
         if q.exists():
             shutil.copy2(q, out / q.name)
 
+    # Scan the submission only: the redacted mission legitimately mentions
+    # islands, and the trailing "Referee this submission" instruction is ours.
     body = m[1]["content"]
-    body = body[body.index("## SUBMISSION"):] if "## SUBMISSION" in body else body
+    if "## SUBMISSION" in body:
+        body = body[body.index("## SUBMISSION"):]
+        rule = "=" * 70
+        if rule in body:
+            body = body[:body.rindex(rule)]
     low = body.lower()
     leaks = [probe for probe in
+             # project machinery
              ("handoff", "ledger", "island", "phase 0", "byrnes_audit",
-              "seed_check", "session", "explorer", "budget", "conjecture n")
+              "seed_check", "session", "explorer", "budget", "conjecture n",
+              # prior review: telling a referee that another one already looked
+              # at this, or what it found, is as biasing as telling it the
+              # expected answer
+              "referee", "reviewer", "pre-screen", "prescreen")
              if probe in low]
     leaks += [f"cross-reference {c}" for c in
               sorted(set(re.findall(r"C\d{4}", body))) if c != claim.id]

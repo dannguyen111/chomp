@@ -65,6 +65,22 @@ def _parse(text: str) -> dict | None:
         return None
 
 
+def _restatement(root: Path, claim_id: str) -> str | None:
+    """A provenance-free restatement of the claim, if one is on file.
+
+    See LEDGER/restatements.json. The substitution is recorded in the verdict
+    so it can be audited against the ledger statement afterwards.
+    """
+    p = root / "LEDGER" / "restatements.json"
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text()).get(claim_id)
+    except json.JSONDecodeError:
+        print(f"[referee] restatements.json is not valid JSON; ignoring it")
+        return None
+
+
 class NotRefereeable(Exception):
     """The claim cannot be judged yet. Not an error -- a skip."""
 
@@ -120,8 +136,12 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     # explorer's confidence -- which is exactly what this gate is supposed not
     # to know. See harness/make_refbox.py.
     from . import make_refbox
+    restated = _restatement(root, claim_id)
     box = Path(tempfile.mkdtemp(prefix=f"refbox-{claim_id}-"))
-    box, leaks = make_refbox.build_box(root, claim, box)
+    box, leaks = make_refbox.build_box(root, claim, box, statement=restated)
+    if restated:
+        print(f"[referee] using the provenance-free restatement of {claim_id} "
+              f"from LEDGER/restatements.json")
     if leaks:
         print(f"[referee] WARNING: the submission for {claim_id} names "
               f"{leaks}. The claim statement reaches the referee verbatim, so "
@@ -174,7 +194,7 @@ def referee(root: Path, claim_id: str, session: str = "referee",
                  "referee emitted no parseable verdict", "confidence": "low"}
         v["_temperature"] = temp
         verdicts.append(v)
-        print(f"[referee t={temp}] {v.get('disposition')} — "
+        print(f"[referee t={temp}] {v.get('disposition')} -- "
               f"{(v.get('gap_description') or '')[:110]}")
 
     d0, d1 = (v.get("disposition") for v in verdicts)
@@ -187,6 +207,8 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     report = {
         "claim": claim_id, "agreed": agreed, "final": final,
         "sandboxed": True,
+        "restated": restated,          # null = judged on the ledger statement
+        "ledger_statement": claim.statement if restated else None,
         "submission_leaks": leaks,
         "escape_attempts_blocked": refusals,
         "spend": round(budget.spent - start_spend, 4),

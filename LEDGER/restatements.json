@@ -1,0 +1,23 @@
+{
+  "_README": [
+    "Provenance-free restatements of claims, used ONLY to build the referee's",
+    "submission. The ledger statement reaches the referee verbatim, and ours",
+    "narrate project history -- 'CORRECTION of C0009', 'the Phase 0 audit set",
+    "this as island 01's opening target', 'discharges (Z1) of byrnes_audit.md'.",
+    "That tells an adversarial reader what answer is wanted and cites documents",
+    "it cannot see, which defeats the gate.",
+    "",
+    "A restatement must say the SAME mathematics as the claim, with the project",
+    "narrative removed and nothing added. It must not weaken or hedge the claim:",
+    "the referee should be able to reject the restatement exactly when it would",
+    "reject the original. These are committed so the substitution is auditable;",
+    "referee.py records in each verdict that a restatement was used, and which.",
+    "",
+    "Claims absent from this file are refereed on their ledger statement, with",
+    "any leak recorded in the verdict as a noted bias."
+  ],
+
+  "C0012": "For all integers q >= r >= 0, f(q,r) <= q + r + 1. Consequently, for each fixed r the quantity f(q,r) - q is at most r + 1 for every q >= r.",
+
+  "C0021": "For every P-position (p,q,r) of 3-row Chomp with r >= 1, p - q <= 3r - 1. Equivalently, for each fixed r, f(q,r) - q is at most 3r - 1 for every q >= r."
+}

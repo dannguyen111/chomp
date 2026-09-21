@@ -64,28 +64,65 @@ def _parse(text: str) -> dict | None:
         return None
 
 
-def referee(root: Path, claim_id: str, session: str = "referee") -> dict:
+class NotRefereeable(Exception):
+    """The claim cannot be judged yet. Not an error -- a skip."""
+
+
+def refereeable(root: Path, claim) -> tuple[bool, str]:
+    """Can this claim be put in front of the referee right now?
+
+    A claim is judged on a PROOF. Several claims carry a `proof_ref` that points
+    at supporting evidence instead -- a census write-up, a literature audit, the
+    test runner. Handing those to the referee would ask it whether a document
+    that never claimed to be a proof is a valid proof; it would say no, and the
+    claim would be marked `refuted` and hidden from every future explorer. So
+    the bar is: a `lemma`, or a file written deliberately as a proof (under a
+    `proofs/` directory). Observations are validated by the solver and their
+    `verified_range`, not by an adversarial reader.
+    """
+    if not claim.proof_ref:
+        return False, "no proof_ref"
+    ref = claim.proof_ref.split(" (")[0].strip()      # tolerate "path (NOTE)"
+    if claim.type != "lemma" and "/proofs/" not in ref.replace("\\", "/"):
+        return False, f"{claim.type} backed by evidence, not a proof: {ref}"
+    if not (root / ref).exists():
+        return False, f"proof file missing: {ref}"
+    if claim.status in ("proven", "refuted", "superseded"):
+        return False, f"already {claim.status}"
+    if (root / "LEDGER" / "referee" / f"{claim.id}.json").exists():
+        return False, "already refereed"
+    return True, ref
+
+
+def referee(root: Path, claim_id: str, session: str = "referee",
+            max_spend: float = 1.00) -> dict:
     led = Ledger(root / "LEDGER")
     resolved = led.resolved()
     claim = resolved.get(claim_id)
     if claim is None:
         raise SystemExit(f"no such claim {claim_id}")
-    if not claim.proof_ref:
-        raise SystemExit(f"{claim_id} has no proof_ref; nothing to referee")
+    ok, why = refereeable(root, claim)
+    if not ok:
+        raise NotRefereeable(f"{claim_id}: {why}")
 
-    proof_path = root / claim.proof_ref
-    if not proof_path.exists():
-        raise SystemExit(f"proof file missing: {claim.proof_ref}")
-    proof = proof_path.read_text()
+    proof = (root / why).read_text()
     deps = {d: resolved[d] for d in claim.depends_on if d in resolved}
 
-    client = OpenRouter(Budget(root / "BUDGET.json"))
+    budget = Budget(root / "BUDGET.json")
+    start_spend = budget.spent
+    client = OpenRouter(budget)
     verdicts = []
 
     for temp in (0.3, 0.8):
         messages = build_messages(root, claim, proof, deps)
         # The referee gets tools so it can actually hunt counterexamples.
         for _ in range(40):
+            if budget.spent - start_spend >= max_spend:
+                print(f"[referee] hit the ${max_spend:.2f} per-claim cap; "
+                      f"forcing a verdict.")
+                messages.append({"role": "user", "content":
+                                 "[HARNESS] Spend cap reached. Emit your JSON "
+                                 "verdict now, this turn, and nothing else."})
             reply = client.chat(
                 messages,
                 model=REFEREE_MODEL,
@@ -151,11 +188,48 @@ def referee(root: Path, claim_id: str, session: str = "referee") -> dict:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("claim_id")
+    ap = argparse.ArgumentParser(prog="harness.referee")
+    ap.add_argument("claim_id", nargs="?", default="auto",
+                    help="a claim id, or 'auto' for every refereeable claim")
     ap.add_argument("--root", default=".")
+    ap.add_argument("--max-spend", type=float, default=1.00,
+                    help="USD cap per claim (default 1.00)")
+    ap.add_argument("--max-claims", type=int, default=3,
+                    help="in auto mode, referee at most this many (default 3)")
+    ap.add_argument("--list", action="store_true",
+                    help="show what is refereeable and exit; spends nothing")
     a = ap.parse_args()
-    referee(Path(a.root).resolve(), a.claim_id)
+    root = Path(a.root).resolve()
+    led = Ledger(root / "LEDGER")
+
+    if a.list or a.claim_id == "auto":
+        ready, skipped = [], []
+        for c in sorted(led.resolved().values(), key=lambda c: c.id):
+            ok, why = refereeable(root, c)
+            (ready if ok else skipped).append((c.id, c.status, c.type, why))
+        print(f"refereeable now ({len(ready)}):")
+        for cid, st, ty, ref in ready:
+            print(f"  {cid}  {st}/{ty}  {ref}")
+        if a.list:
+            print(f"\nnot yet ({len(skipped)}):")
+            for cid, st, ty, why in skipped:
+                print(f"  {cid}  {st}/{ty}  -- {why}")
+            return
+        if not ready:
+            print("nothing to referee.")
+            return
+        for cid, *_ in ready[:a.max_claims]:
+            print(f"\n=== refereeing {cid} ===")
+            try:
+                referee(root, cid, max_spend=a.max_spend)
+            except NotRefereeable as e:
+                print(f"skipped: {e}")
+        return
+
+    try:
+        referee(root, a.claim_id, max_spend=a.max_spend)
+    except NotRefereeable as e:
+        print(f"skipped: {e}")
 
 
 if __name__ == "__main__":

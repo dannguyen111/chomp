@@ -1,0 +1,108 @@
+name: referee
+
+# The gate that MISSION section 7 makes load-bearing: a claim becomes `proven`
+# only after an adversarial reader who cannot see its provenance accepts it
+# twice, at two temperatures. Nothing else in the pipeline can promote a claim,
+# and nothing else can kill a false one.
+#
+# Manual only, and deliberately not chained onto `session`. A session ending at
+# 3am should not be able to promote its own work while nobody is looking.
+
+on:
+  workflow_dispatch:
+    inputs:
+      claim_id:
+        description: "Claim id, or 'auto' for every refereeable claim"
+        default: "auto"
+      max_spend:
+        description: "USD cap per claim"
+        default: "1.00"
+      max_claims:
+        description: "In auto mode, referee at most this many"
+        default: "3"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chomp
+  cancel-in-progress: false
+
+jobs:
+  referee:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gate on budget
+        id: gate
+        run: |
+          set -euo pipefail
+          REMAIN=$(python -c "import json;d=json.load(open('BUDGET.json'));print(d['cap']-d['spent'])")
+          echo "Remaining: \$$REMAIN"
+          python -c "import sys;sys.exit(0 if $REMAIN >= 1.0 else 1)" \
+            && echo "go=true" >> "$GITHUB_OUTPUT" \
+            || { echo "Budget too low to referee."; echo "go=false" >> "$GITHUB_OUTPUT"; }
+
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.go == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        if: steps.gate.outputs.go == 'true'
+        run: pip install requests
+
+      # The referee gets the solver: an adversarial reader that cannot run a
+      # counterexample search is just a second opinion on prose.
+      - name: Restore solver
+        if: steps.gate.outputs.go == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            GROUND_TRUTH/solver
+            GROUND_TRUTH/cache
+          key: solver-${{ hashFiles('GROUND_TRUTH/solver.cpp') }}
+          fail-on-cache-miss: true
+
+      - name: What is refereeable
+        if: steps.gate.outputs.go == 'true'
+        run: python -m harness.referee --list
+
+      - name: Referee
+        if: steps.gate.outputs.go == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          chmod +x GROUND_TRUTH/solver
+          python -m harness.referee "${{ inputs.claim_id || 'auto' }}" \
+            --root . \
+            --max-spend "${{ inputs.max_spend || '1.00' }}" \
+            --max-claims "${{ inputs.max_claims || '3' }}"
+
+      - name: Commit verdicts
+        if: always() && steps.gate.outputs.go == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "chomp-harness"
+          git config user.email "noreply@github.com"
+          git add -A BUDGET.json LEDGER
+          git diff --cached --quiet && exit 0
+          git commit -m "referee ${{ github.run_number }} (${{ inputs.claim_id }})"
+          for i in 1 2 3; do
+            git pull --rebase --autostash && git push && exit 0
+            sleep $((i * 5))
+          done
+          echo "Push failed after 3 attempts."; exit 1
+
+      - name: Verdict summary
+        if: always() && steps.gate.outputs.go == 'true'
+        run: |
+          for f in LEDGER/referee/*.json; do
+            [ -f "$f" ] || continue
+            { echo "### $(basename "$f" .json)"; echo '```json'
+              python -c "import json,sys;d=json.load(open(sys.argv[1]));print(json.dumps({k:d[k] for k in ('claim','agreed','final')},indent=2))" "$f"
+              echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          done

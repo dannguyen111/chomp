@@ -32,9 +32,11 @@ jobs:
   session:
     runs-on: ubuntu-latest
     # GitHub hard-kills a hosted job at 360 minutes. The session is capped at
-    # 330 below, leaving 25 minutes of slack for setup, the commit and the push
-    # -- a job killed by the platform may never reach the commit step, which
-    # would lose the ledger, the handoff and the transcript together.
+    # 300 below and then gets at most GRACE_TURNS more to land its results, so
+    # the worst case is roughly 300 + 10 turns ~= 330 minutes. The remaining
+    # slack is for setup, the commit and the push: session 2 was killed by this
+    # timeout mid-loop, and only `if: always()` on the commit step saved its
+    # ledger, handoff and transcript.
     timeout-minutes: 355
 
     steps:
@@ -99,7 +101,7 @@ jobs:
             --island "${{ steps.pick.outputs.island }}" \
             --session-cap "${{ inputs.session_cap || '5.00' }}" \
             --max-output-tokens 1430000 \
-            --max-minutes 330
+            --max-minutes 300
 
       - name: Commit state
         if: always() && steps.gate.outputs.go == 'true'

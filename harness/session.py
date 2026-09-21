@@ -52,6 +52,13 @@ STATUS = (
     "({pmins:.0f}%) | claims logged this session: {n}"
 )
 
+# Turns allowed after a limit is breached, to land results and write the
+# handoff. Session 2 ran 25 minutes past its own max-minutes and was killed by
+# the GitHub job timeout instead: the loop only exited on a turn with no tool
+# calls, and the model kept calling tools through every FINAL_NUDGE. This is the
+# hard stop that was missing.
+GRACE_TURNS = 10
+
 
 def _ledger_ids(root: Path) -> set[str]:
     """Claim ids currently on disk. Used to tell the explorer, every turn, how
@@ -67,7 +74,7 @@ def run(
     island: str,
     *,
     max_output_tokens: int = 1_430_000,
-    max_minutes: int = 330,
+    max_minutes: int = 300,
     session_spend_cap: float = 5.00,
     temperature: float = 0.7,
 ) -> dict:
@@ -96,6 +103,29 @@ def run(
     out_tokens = 0
     nudged = False
     turn = 0
+    over_since: int | None = None
+    which = "none"
+
+    def write_summary() -> dict:
+        """Rewritten after every turn, so a session killed by the platform
+        still leaves a summary. Session 2 was cancelled mid-loop and left only
+        a transcript, because this used to run once after the loop."""
+        s = {
+            "session": session_id,
+            "island": island,
+            "turns": turn,
+            "output_tokens": out_tokens,
+            "minutes": round((time.time() - started) / 60, 1),
+            "cost": round(budget.spent - start_spend, 4),
+            "total_spent": round(budget.spent, 4),
+            "remaining": round(budget.remaining, 4),
+            "handoff_written": (root / "islands" / island / "HANDOFF.md").exists(),
+            "claims_appended": sorted(_ledger_ids(root) - claims_at_start),
+            "stopped_on": which,
+            "complete": False,
+        }
+        (run_dir / "summary.json").write_text(json.dumps(s, indent=2))
+        return s
 
     while True:
         turn += 1
@@ -114,6 +144,18 @@ def run(
         pct = 100 * fracs[which]
         over = pct >= 100
         n_claims = len(_ledger_ids(root) - claims_at_start)
+
+        if over and over_since is None:
+            over_since = turn
+        # Hard stop. Nudging is a request; this is the enforcement. Without it a
+        # model that keeps calling tools never reaches the `not reply.tool_calls`
+        # exit below, and the run dies on the platform timeout instead.
+        if over_since is not None and turn - over_since >= GRACE_TURNS:
+            log({"event": "grace_exhausted", "turn": turn, "limit": which,
+                 "grace_turns": GRACE_TURNS})
+            print(f"[session] {GRACE_TURNS} turns past the {which} limit; "
+                  f"stopping.")
+            break
 
         if over and nudged:
             messages.append({"role": "user",
@@ -196,20 +238,10 @@ def run(
             spend=session_spend, maxspend=session_spend_cap,
             pspend=100 * fracs["spend"], mins=elapsed_min, maxmins=max_minutes,
             pmins=100 * fracs["wall clock"], n=n_claims)})
+        write_summary()
 
-    summary = {
-        "session": session_id,
-        "island": island,
-        "turns": turn,
-        "output_tokens": out_tokens,
-        "minutes": round((time.time() - started) / 60, 1),
-        "cost": round(budget.spent - start_spend, 4),
-        "total_spent": round(budget.spent, 4),
-        "remaining": round(budget.remaining, 4),
-        "handoff_written": (root / "islands" / island / "HANDOFF.md").exists(),
-        "claims_appended": sorted(_ledger_ids(root) - claims_at_start),
-        "stopped_on": which,
-    }
+    summary = write_summary()
+    summary["complete"] = True
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2))
     log({"event": "end", **summary})
 
@@ -228,7 +260,7 @@ def main() -> None:
     ap.add_argument("--root", default=".")
     ap.add_argument("--island", default="01-recurrence", choices=list(prompt.ISLANDS))
     ap.add_argument("--max-output-tokens", type=int, default=1_430_000)
-    ap.add_argument("--max-minutes", type=int, default=330)
+    ap.add_argument("--max-minutes", type=int, default=300)
     ap.add_argument("--session-cap", type=float, default=5.00)
     ap.add_argument("--temperature", type=float, default=0.7)
     a = ap.parse_args()

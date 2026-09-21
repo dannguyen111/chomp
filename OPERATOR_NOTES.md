@@ -105,13 +105,16 @@ is ~570 minutes and a hosted job is hard-killed at 360. Session cap 5.00,
 
 ## 4. Known defects, not yet fixed
 
-**The wired referee can read its way around the redaction.** `referee.py`
-withholds MISSION sections 5, 7, 8 and 9 from the prompt, but the referee is handed `bash`
-and `read_file` scoped to the project root, and `tools.PROTECTED` gates only
-*writes*. One `cat islands/01-recurrence/HANDOFF.md` reveals the expected
-answer. `make_refbox` exists because of this; the durable fix is a read
-allowlist in `tools.dispatch`. Worth doing before the referee is trusted on a
-borderline claim.
+**~~The wired referee can read its way around the redaction.~~ FIXED
+2026-09-21.** `referee.py` now builds an isolated box with
+`make_refbox.build_box()` and runs its tools against *that*, not the project
+root, with `tools.dispatch(..., sandbox=True)`. The box holds the submission,
+the solver and a usage note -- nothing else. `bash` runs with `shell=True`, so
+root-scoping alone never constrained it (`cat ../../LEDGER/claims.jsonl` walked
+straight out); sandbox mode additionally refuses any command reaching for a
+parent directory, an absolute path or a home directory. Verdict records now
+carry `sandboxed`, `submission_leaks` and `escape_attempts_blocked` -- a
+referee that *tries* to escape is itself worth knowing about.
 
 **C0013 is not refereeable and should not be sent.** It has no proof file, and
 C0023 established that its displayed closed form is wrong -- the Zeilberger

@@ -61,6 +61,48 @@ def build_solver(root: Path) -> Path:
     from GROUND_TRUTH import chomp                      # type: ignore
     return chomp.build()
 
+def build_box(root: Path, claim, out: Path, census=(), statement=None):
+    """Create the isolated box for one claim. Returns (path, leaks).
+
+    `leaks` lists provenance the SUBMISSION would hand the referee; a non-empty
+    list means the caller should restate the claim before using the box.
+    """
+    ok, why = refereeable(root, claim)
+    if not ok:
+        raise ValueError(f"{claim.id} is not refereeable: {why}")
+
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+
+    if statement:
+        claim = replace(claim, statement=statement)
+    m = build_messages(root, claim, (root / why).read_text(), {})
+    (out / "REFEREE_PROMPT.md").write_text(
+        m[0]["content"] + "\n\n" + "=" * 70 + "\n\n" + m[1]["content"],
+        encoding="utf-8")
+
+    exe = build_solver(root)
+    shutil.copy2(exe, out / exe.name)
+    invoke = f"./{exe.name}" if platform.system() != "Windows" else exe.name
+    (out / "SOLVER.md").write_text(SOLVER_MD.format(exe=invoke), encoding="utf-8")
+
+    for c in census:
+        q = Path(c)
+        if q.exists():
+            shutil.copy2(q, out / q.name)
+
+    body = m[1]["content"]
+    body = body[body.index("## SUBMISSION"):] if "## SUBMISSION" in body else body
+    low = body.lower()
+    leaks = [probe for probe in
+             ("handoff", "ledger", "island", "phase 0", "byrnes_audit",
+              "seed_check", "session", "explorer", "budget", "conjecture n")
+             if probe in low]
+    leaks += [f"cross-reference {c}" for c in
+              sorted(set(re.findall(r"C\d{4}", body))) if c != claim.id]
+    return out, leaks
+
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="harness.make_refbox")
@@ -74,58 +116,22 @@ def main(argv=None) -> int:
                     help="replace the claim statement with a provenance-free "
                          "restatement. The ledger statement is what reaches the "
                          "referee verbatim, and several of ours narrate project "
-                         "history ('corrects C0009', 'the Phase 0 audit'), which "
-                         "tells the referee what answer is wanted. Use this to "
-                         "hand it the mathematics alone, and say in the verdict "
-                         "record that you did.")
+                         "history, which tells it what answer is wanted.")
     a = ap.parse_args(argv)
 
     root = Path(a.root).resolve()
-    out = Path(a.out).resolve()
     led = Ledger(root / "LEDGER")
     claim = led.resolved().get(a.claim_id)
     if claim is None:
         print(f"no such claim {a.claim_id}", file=sys.stderr)
         return 1
-    ok, why = refereeable(root, claim)
-    if not ok:
-        print(f"{a.claim_id} is not refereeable: {why}", file=sys.stderr)
+    try:
+        out, leaks = build_box(root, claim, Path(a.out).resolve(),
+                               a.census, a.statement)
+    except ValueError as e:
+        print(e, file=sys.stderr)
         return 1
 
-    if out.exists():
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
-
-    if a.statement:
-        claim = replace(claim, statement=a.statement)
-    m = build_messages(root, claim, (root / why).read_text(), {})
-    (out / "REFEREE_PROMPT.md").write_text(
-        m[0]["content"] + "\n\n" + "=" * 70 + "\n\n" + m[1]["content"],
-        encoding="utf-8")
-
-    exe = build_solver(root)
-    dest = out / exe.name
-    shutil.copy2(exe, dest)
-    invoke = f"./{exe.name}" if platform.system() != "Windows" else exe.name
-    (out / "SOLVER.md").write_text(SOLVER_MD.format(exe=invoke), encoding="utf-8")
-
-    for c in a.census:
-        p = Path(c)
-        if p.exists():
-            shutil.copy2(p, out / p.name)
-
-    # Paranoia check on the SUBMISSION only -- the referee's own system prompt
-    # and MISSION section 6 legitimately mention islands and the ledger while
-    # telling it what it will not be shown.
-    body = m[1]["content"]
-    body = body[body.index("## SUBMISSION"):] if "## SUBMISSION" in body else body
-    low = body.lower()
-    leaks = [probe for probe in
-             ("handoff", "ledger", "island", "phase 0", "byrnes_audit",
-              "seed_check", "session", "explorer", "budget", "conjecture n")
-             if probe in low]
-    leaks += [f"cross-reference {c}" for c in
-              sorted(set(re.findall(r"C\d{4}", body))) if c != claim.id]
     print(f"refbox: {out}")
     for f in sorted(out.iterdir()):
         print(f"  {f.stat().st_size:>10,}  {f.name}")

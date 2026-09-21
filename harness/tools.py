@@ -10,6 +10,7 @@ only thing standing between you and believing a false lemma.
 """
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -107,9 +108,31 @@ def _clip(s: str) -> str:
     )
 
 
-def dispatch(name: str, args: dict, root: Path) -> str:
+# `bash` runs with shell=True, so `_resolve`'s root check does not constrain it:
+# `cat ../../LEDGER/claims.jsonl` walks straight out. That is harmless for an
+# explorer working in its own project, and fatal for a referee, whose whole
+# value is not knowing what answer is expected. In sandbox mode the tools run
+# against an isolated box (see harness/make_refbox.py) and any command that
+# reaches for a parent directory, an absolute path or a home directory is
+# refused -- inside a four-file box there is no legitimate reason to.
+_ESCAPE = re.compile(
+    r"""(^|[\s'"=(])(\.\.[\\/]|[\\/](?![\\/])|~[\\/]|[A-Za-z]:[\\/])""")
+
+
+def _escapes(command: str) -> str | None:
+    m = _ESCAPE.search(command)
+    return m.group(0).strip() if m else None
+
+
+def dispatch(name: str, args: dict, root: Path, *, sandbox: bool = False) -> str:
     try:
         if name == "bash":
+            if sandbox:
+                bad = _escapes(args["command"])
+                if bad:
+                    return (f"REFUSED: {bad!r} reaches outside the working "
+                            f"directory. Everything you need is in it; list it "
+                            f"with `ls`. This refusal is recorded.")
             timeout = min(int(args.get("timeout", 600)), 3600)
             r = subprocess.run(
                 args["command"],

@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import tempfile
 from pathlib import Path
 
 from . import tools
@@ -113,6 +114,21 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     client = OpenRouter(budget)
     verdicts = []
 
+    # The referee works inside an isolated box, NOT the project root. Its tools
+    # used to be scoped to the repo, and `bash` runs with shell=True, so one
+    # `cat islands/<id>/HANDOFF.md` handed it the expected answer and the
+    # explorer's confidence -- which is exactly what this gate is supposed not
+    # to know. See harness/make_refbox.py.
+    from . import make_refbox
+    box = Path(tempfile.mkdtemp(prefix=f"refbox-{claim_id}-"))
+    box, leaks = make_refbox.build_box(root, claim, box)
+    if leaks:
+        print(f"[referee] WARNING: the submission for {claim_id} names "
+              f"{leaks}. The claim statement reaches the referee verbatim, so "
+              f"this tells it what answer is wanted. Recorded in the verdict; "
+              f"use `make_refbox --statement` for a clean run.")
+    refusals = 0
+
     for temp in (0.3, 0.8):
         messages = build_messages(root, claim, proof, deps)
         # The referee gets tools so it can actually hunt counterexamples.
@@ -141,10 +157,15 @@ def referee(root: Path, claim_id: str, session: str = "referee",
             for call in reply.tool_calls:
                 fn = call["function"]
                 args = json.loads(fn.get("arguments") or "{}")
+                result = tools.dispatch(fn["name"], args, box, sandbox=True)
+                if result.startswith("REFUSED:") and "outside" in result:
+                    refusals += 1
+                    print(f"[referee t={temp}] blocked an escape: "
+                          f"{str(args.get('command'))[:90]}")
                 messages.append({
                     "role": "tool",
                     "tool_call_id": call["id"],
-                    "content": tools.dispatch(fn["name"], args, root),
+                    "content": result,
                 })
 
         v = _parse(reply.text)
@@ -164,7 +185,12 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     out_dir = root / "LEDGER" / "referee"
     out_dir.mkdir(parents=True, exist_ok=True)
     report = {
-        "claim": claim_id, "agreed": agreed, "final": final, "verdicts": verdicts,
+        "claim": claim_id, "agreed": agreed, "final": final,
+        "sandboxed": True,
+        "submission_leaks": leaks,
+        "escape_attempts_blocked": refusals,
+        "spend": round(budget.spent - start_spend, 4),
+        "verdicts": verdicts,
     }
     (out_dir / f"{claim_id}.json").write_text(json.dumps(report, indent=2))
 

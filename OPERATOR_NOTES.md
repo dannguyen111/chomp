@@ -140,6 +140,38 @@ Containment is a guardrail, not a boundary: `bash` runs with `shell=True`, and
 a determined agent can still enumerate directories. The real fix is running the
 job in a container. Until then, read `escape_attempts_blocked` in every verdict.
 
+## 3b. Referee runs 3 and 4: the gate works, the bookkeeping did not
+
+**Run 3** got a pass through for the first time: `t=0.3` returned `accept`,
+high confidence, no gaps, after reimplementing the recurrence independently to
+`q,r <= 1500`, sweeping the full table to 400, and checking every live row of
+the r<=50000 census. `t=0.8` ran out of turns -- being *asked* for a verdict was
+not enough, it made another tool call on its last turn. Tools are now withdrawn
+on the forced turn, so a reply can only be the verdict.
+
+**Run 4** got both passes through, and **both found the proof correct**:
+`t=0.3` "The stated claim is proved correctly... the deficiency is not a gap in
+the proof"; `t=0.8` "No gap found". The run nonetheless marked C0012
+**refuted**, because the old rule was "disagreement falls to the weaker
+verdict" and `accept` != `accept_with_gaps`. A disagreement about whether to
+flag a scope caveat became a refutation.
+
+Reverted, and the algebra rewritten: **only an agreed `accept` promotes and only
+an agreed `reject` refutes.** Everything else -- a caveat mismatch, a genuine
+accept/reject split, any unfinished pass -- leaves the claim exactly as it was.
+A split is an open question, not a refutation. There is a regression test over
+all nine disposition pairs; every historical failure of this gate now resolves
+to "leave it alone".
+
+`novelty_checked` is also no longer set on the strength of "the referee did not
+say it was known". The sandbox blocks search, so the referee cannot check
+novelty; the flag is only set when a pass actually reports `novel`.
+
+**Standing lesson.** Three of this gate's four failures were the same mistake in
+different clothes: treating "the gate did not reach a confident yes" as "the
+claim is false". If you touch this code, the invariant is that *only an agreed,
+finished, explicit reject may ever mark a claim refuted.*
+
 ## 4. Known defects, not yet fixed
 
 **~~The wired referee can read its way around the redaction.~~ FIXED

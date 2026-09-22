@@ -234,15 +234,22 @@ def referee(root: Path, claim_id: str, session: str = "referee",
 
     d0, d1 = (v.get("disposition") for v in verdicts)
     agreed = d0 == d1
-    # Disagreement is never an accept. But a pass that produced no verdict is
-    # not evidence against the claim, so it can never combine into a reject --
-    # it makes the whole run inconclusive and the claim is left alone.
-    if "inconclusive" in (d0, d1):
-        final = "inconclusive"
-    elif agreed:
+    # Only two outcomes may move a claim: both passes accepting promotes it,
+    # both passes rejecting refutes it. Everything else means the gate did not
+    # resolve, and the claim is left exactly as it was.
+    #
+    # The earlier rule -- "disagreement falls to the weaker verdict", i.e. to
+    # reject -- refuted C0012 on a run where NEITHER pass rejected it: one said
+    # `accept`, the other `accept_with_gaps`, both at high confidence and both
+    # explicitly finding the proof correct. A disagreement about whether to
+    # flag a caveat is not evidence of falsity, and neither is a genuine
+    # accept/reject split: that is an unresolved question, not a refutation.
+    if agreed and d0 in ("accept", "reject"):
         final = d0
+    elif "inconclusive" in (d0, d1):
+        final = "inconclusive"
     else:
-        final = "reject"
+        final = "unresolved"
 
     out_dir = root / "LEDGER" / "referee"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -259,31 +266,42 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     # An inconclusive run is a harness bug report, not a verdict. Keep it out of
     # the verdict directory, or `refereeable()` will treat the claim as judged
     # and never look at it again.
-    name = (f"{claim_id}.json" if final != "inconclusive"
-            else f"invalid/{claim_id}.inconclusive.json")
+    name = (f"{claim_id}.json" if final in ("accept", "reject")
+            else f"invalid/{claim_id}.{final}.json")
     (out_dir / name).parent.mkdir(parents=True, exist_ok=True)
     (out_dir / name).write_text(json.dumps(report, indent=2))
 
-    novel = all(
-        (v.get("novelty") or {}).get("result") != "already known" for v in verdicts
-    )
-    if final == "accept" and agreed and novel:
-        led.set_status(claim_id, "proven", session, novelty_checked=True)
-        print(f"\n{claim_id} PROMOTED to proven.")
-    elif final == "inconclusive":
-        print(f"\n{claim_id} INCONCLUSIVE -- the referee did not finish. The "
-              f"claim is untouched and remains refereeable. This is a harness "
-              f"problem to fix, not a result: see "
-              f"LEDGER/referee/invalid/{claim_id}.inconclusive.json")
+    results = [(v.get("novelty") or {}).get("result") for v in verdicts]
+    known = any(r == "already known" for r in results)
+    # Network is blocked in the sandbox, so the referee cannot actually search.
+    # Recording novelty_checked=True on the strength of "it did not say the
+    # result was known" would be a lie in the ledger; novelty is the operator's
+    # job (OPERATOR_NOTES.md).
+    novelty_checked = all(r == "novel" for r in results)
+
+    if final == "accept" and not known:
+        led.set_status(claim_id, "proven", session,
+                       novelty_checked=novelty_checked)
+        print(f"\n{claim_id} PROMOTED to proven"
+              + ("." if novelty_checked
+                 else " (novelty NOT checked -- the sandbox blocks search)."))
     elif final == "reject":
         led.set_status(
             claim_id, "refuted", session,
             evidence=verdicts[0].get("gap_description", "")[:400],
         )
-        print(f"\n{claim_id} REFUTED. Record the lesson in dead_ends.md.")
+        print(f"\n{claim_id} REFUTED by both passes. Record the lesson in "
+              f"dead_ends.md.")
+    elif final == "inconclusive":
+        print(f"\n{claim_id} INCONCLUSIVE -- a pass did not finish. The claim "
+              f"is untouched and remains refereeable. A harness problem to "
+              f"fix, not a result.")
     else:
-        print(f"\n{claim_id} left at '{claim.status}' "
-              f"(disposition={final}, agreed={agreed}, novel={novel}).")
+        print(f"\n{claim_id} UNRESOLVED -- the passes disagreed ({d0} vs {d1}). "
+              f"Not promoted, and NOT refuted: a split is an open question, not "
+              f"a refutation. The claim is untouched and remains refereeable; "
+              f"read both verdicts in "
+              f"LEDGER/referee/invalid/{claim_id}.unresolved.json.")
 
     return report
 

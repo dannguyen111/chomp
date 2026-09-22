@@ -31,7 +31,11 @@ concurrency:
 jobs:
   referee:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    # Wall clock is the only limit that has ever come close: run 4 used 95 of
+    # 120 minutes, while spending $0.24 of its $0.60 cap. A job killed at the
+    # timeout loses the verdict entirely, and the headroom costs nothing unless
+    # it is used.
+    timeout-minutes: 180
 
     steps:
       - uses: actions/checkout@v4

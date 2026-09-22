@@ -1,18 +1,32 @@
 {
   "claim": "C0012",
-  "agreed": true,
+  "agreed": false,
   "final": "inconclusive",
   "sandboxed": true,
   "restated": "For all integers q >= r >= 0, f(q,r) <= q + r + 1. Consequently, for each fixed r the quantity f(q,r) - q is at most r + 1 for every q >= r.",
   "ledger_statement": "For all q >= r >= 0, f(q,r) <= q + r + 1. Proof: induction over the three branches of the recurrence. In the mex branch the set {f(a,r):a<q} u {f(q,b):b<r} has at most q+r elements, so among the q+r+1 positive integers 1..q+r+1 one is missing and the mex is at most q+r+1; the r>q branch gives f(q,q) <= 2q+1 <= q+r+1; the stale branch gives f(q-1,r) <= q+r. Corollary: max_q (f(q,r)-q) <= r+1, which discharges (Z1) of byrnes_audit.md with C=1.",
   "submission_leaks": [],
-  "escape_attempts_blocked": 13,
-  "spend": 0.1591,
+  "escape_attempts_blocked": 1,
+  "spend": 0.1584,
   "verdicts": [
     {
-      "disposition": "inconclusive",
-      "gap_description": "no parseable verdict: the referee did not finish. This is a harness failure and says nothing about the claim.",
-      "confidence": "none",
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": "none",
+      "counterexample_search": {
+        "range_checked": "full table q,r<=400 (solver), independent DP reimplementation for all q,r<=1500 including r>q folding; census rows r<=50000 (50001 rows) checking all live-row dvals; full solver rows r=49999 for q<=70710, r=50000 for q<=90600, r=6541 for q<=12000, r=120 for q<=400; boundary/degenerate rows r=0,1,3",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "local repository contents (SOLVER.md, census_50000.tsv) and solver validation metadata; external arXiv/OEIS search was blocked by the sandbox"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "Yes. The bound is produced explicitly by cardinality counting in Branch (C): 'f(q,r) = mex(S) <= q + r + 1' together with 'min(q,r) = r' for that branch, giving the statement (P) 'f(q,r) <= q + min(q,r) + 1'. This is directly evaluable for any input. The author correctly and explicitly disclaims that this bounds the preperiod N(r); it only bounds the values of f(q,r)-q.",
+      "confidence": "high",
       "_temperature": 0.3
     },
     {

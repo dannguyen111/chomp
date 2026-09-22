@@ -1,0 +1,58 @@
+{
+  "claim": "C0012",
+  "agreed": false,
+  "final": "reject",
+  "sandboxed": true,
+  "restated": "For all integers q >= r >= 0, f(q,r) <= q + r + 1. Consequently, for each fixed r the quantity f(q,r) - q is at most r + 1 for every q >= r.",
+  "ledger_statement": "For all q >= r >= 0, f(q,r) <= q + r + 1. Proof: induction over the three branches of the recurrence. In the mex branch the set {f(a,r):a<q} u {f(q,b):b<r} has at most q+r elements, so among the q+r+1 positive integers 1..q+r+1 one is missing and the mex is at most q+r+1; the r>q branch gives f(q,q) <= 2q+1 <= q+r+1; the stale branch gives f(q-1,r) <= q+r. Corollary: max_q (f(q,r)-q) <= r+1, which discharges (Z1) of byrnes_audit.md with C=1.",
+  "submission_leaks": [],
+  "escape_attempts_blocked": 5,
+  "spend": 0.2354,
+  "verdicts": [
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": null,
+      "gap_description": "The stated claim is proved correctly: in branch (C), |S| <= q + r is valid as a union bound (no distinctness needed), so mex(S) <= q + r + 1, and branches (A),(B) follow. The deficiency is not a gap in the proof of the value bound but a gap relative to the project target: the corollary bounds the values of f(q,r)-q, not the preperiod N(r), and the submission explicitly concedes that no bound on N(r) is supplied. Novelty of this elementary pigeonhole lemma is not established.",
+      "counterexample_search": {
+        "range_checked": "full table q,r <= 5000 via solver; live-row d-values for all 20712 live r <= 50000 from census_50000.tsv; targeted row r=20000, q <= 25000; plus independent Python recurrence q,r <= 2000",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "OEIS id:A029899, A029900, A029901, A029902, A029903, A029904, A029905, A069001",
+          "OEIS search: 'Chomp losing positions'",
+          "Brouwer's Chomp page (win.tue.nl/~aeb/games/chomp.html)",
+          "Zeilberger, Three-Rowed CHOMP (a029899.pdf)",
+          "Sheiner arXiv:2605.23837 (searched for q+r/r+1 bounds)"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "The value bound is effective: the line 'f(q,r) = mex(S) <= q + r + 1' produces the explicit computable bound r+1 (and C=2 works as max_q(f(q,r)-q) <= 2r). However, no line anywhere produces a bound on the preperiod N(r); the submission itself states 'that argument is not in this file'. So the proof yields an explicit value bound, not the effective preperiod bound that is THE TARGET.",
+      "confidence": "high",
+      "_temperature": 0.3
+    },
+    {
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": "No gap found. The induction is well-founded under lexicographic order on (q,r): branch (A) reads (q,q) with q<r (same first coordinate, smaller second), branch (B) reads (q-1,r) (smaller first coordinate), and branch (C) reads (a,r) with a<q and (q,b) with b<r. All three branches of the recurrence are handled, and the mex argument is valid: S has at most q+r elements, so among the q+r+1 integers 1..q+r+1 at least one is absent, forcing mex(S) <= q+r+1.",
+      "counterexample_search": {
+        "range_checked": "full table q,r <= 6000 (r <= q); census_50000.tsv covering all r <= 50000, checking all 20711 live rows' eventual d-values (22138 values) against d <= r+1; targeted stale-row pre-stale regions for r in {1,3,6,1000,5000,20000}; the known-anomalous row r=120 out to q=400; row r=50000 sampled around q=50000",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "(network access refused by environment) arXiv API: Chomp three-row losing positions",
+          "(network access refused by environment) OEIS: chomp losing position"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "The proof produces an explicit, computable value bound: the constant is produced at the line 'f(q,r) = mex(S) <= q + r + 1', giving the corollary 'max_{q >= r} (f(q,r) - q) <= r + 1', evaluable for any r by direct computation. It does NOT produce a bound on the preperiod N(r); the submission itself correctly and explicitly states that bounded values of f(q,r)-q do not by themselves bound the onset of periodicity.",
+      "confidence": "high",
+      "_temperature": 0.8
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "claim": "C0012",
+  "agreed": true,
+  "final": "accept",
+  "sandboxed": true,
+  "restated": "For all integers q >= r >= 0, f(q,r) <= q + r + 1. Consequently, for each fixed r the quantity f(q,r) - q is at most r + 1 for every q >= r.",
+  "ledger_statement": "For all q >= r >= 0, f(q,r) <= q + r + 1. Proof: induction over the three branches of the recurrence. In the mex branch the set {f(a,r):a<q} u {f(q,b):b<r} has at most q+r elements, so among the q+r+1 positive integers 1..q+r+1 one is missing and the mex is at most q+r+1; the r>q branch gives f(q,q) <= 2q+1 <= q+r+1; the stale branch gives f(q-1,r) <= q+r. Corollary: max_q (f(q,r)-q) <= r+1, which discharges (Z1) of byrnes_audit.md with C=1.",
+  "submission_leaks": [],
+  "escape_attempts_blocked": 2,
+  "spend": 0.2277,
+  "verdicts": [
+    {
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": "The proof is a valid lexicographic induction. Branch (A) applies the induction hypothesis at (q,q) <_lex (q,r); branch (B) follows directly from the branch condition f(q-1,r) < q; branch (C) uses only the cardinality bound |S| <= q+r and the pigeonhole fact mex(S) <= |S|+1 <= q+r+1, which equals q+min(q,r)+1 because branch (C) is reached only when r <= q. No step fails.",
+      "counterexample_search": {
+        "range_checked": "grid all q,r<=1000 with q>=r (0 violations); independent row sweep r=0..6000 with q up to 2r+600 (0 violations); census_50000.tsv: all eventual d-values for live rows r=1..50000 checked against r+1 (0 violations). Tight set (f = q+r+1) on q,r<=1000 is exactly row r=0 plus (1,1), matching the submission's claim.",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "arxiv.org/abs/2605.23837",
+          "oeis.org/search?q=A029900"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "Effective and computable. The bound constant is produced explicitly by the line 'The least positive integer outside S is therefore at most q + r + 1: f(q,r) = mex(S) <= q + r + 1', following |S| <= q+r. No appeal to eventual periodicity or any existence-only quantity is made. Note: this bound controls the VALUES f(q,r)-q <= r+1 and does not itself bound the preperiod N(r); the submission states this limitation explicitly, and the corollary is only offered as one input (a computable C = 2 with max_q(f(q,r)-q) <= C*r) to a separate argument.",
+      "confidence": "high",
+      "_temperature": 0.3
+    },
+    {
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": "No gap found. The proof is a valid induction over the lexicographic order on (q,r): branch (A) applies the induction hypothesis at (q,q) with q<r; branch (B) uses the branch condition f(q-1,r)<q directly; and in branch (C), since S = {f(a,r): a<q} \u222a {f(q,b): b<r} has at most q+r elements, at least one of the q+r+1 integers 1,...,q+r+1 is outside S, so mex(S) \u2264 q+r+1. Branch (C) is only reached when r\u2264q, giving exactly q+min(q,r)+1.",
+      "counterexample_search": {
+        "range_checked": "grid q,r \u2264 400 (40401 cells, 0 violations, 402 tight cells exactly at r=0 and (q,r)=(1,1)); row r=50000 for q \u2264 60000 (0 violations); census_50000.tsv period values over all live rows r \u2264 50000 (0 violations); pre-existing check_big.out covered r=0..6000, q up to 2r+600 (0 violations)",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "arXiv:2605.23837 (Sheiner, May 2026 unique winning move in three-row Chomp - different result)",
+          "Google/DuckDuckGo: \"q+r+1\" Chomp",
+          "Google/DuckDuckGo: \"f(q,r)\" Chomp bound",
+          "arXiv API search all:\"Chomp\" (rejected 406, abs page inspected)",
+          "OEIS A029899 page"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "For the submitted claim (a universal inequality, not the N(r) preperiod target), yes: the proof produces the explicit computational bound 'f(q,r) = mex(S) <= q + r + 1' and the corollary 'max_{q>=r}(f(q,r)-q) <= r+1'. The submission itself correctly notes this does not bound the preperiod N(r); that is outside this claim's scope.",
+      "confidence": "high",
+      "_temperature": 0.8
+    }
+  ]
+}

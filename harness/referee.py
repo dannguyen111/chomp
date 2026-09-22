@@ -170,9 +170,10 @@ def referee(root: Path, claim_id: str, session: str = "referee",
             # spend cap never bit (they used $0.16 of $0.60) and nothing told
             # them the end was coming, so the loop exited on a tool call and
             # there was no verdict to parse. Warn, then force.
-            if budget.spent - start_spend >= max_spend or left <= 1:
+            forcing = budget.spent - start_spend >= max_spend or left <= 2
+            if forcing:
                 print(f"[referee] forcing a verdict "
-                      f"({'spend cap' if left > 1 else 'out of turns'}).")
+                      f"({'spend cap' if left > 2 else 'out of turns'}).")
                 messages.append({"role": "user", "content":
                                  "[HARNESS] Stop. Emit your JSON verdict now, "
                                  "this turn, and nothing else. If you did not "
@@ -186,7 +187,11 @@ def referee(root: Path, claim_id: str, session: str = "referee",
             reply = client.chat(
                 messages,
                 model=REFEREE_MODEL,
-                tools=tools.SCHEMA,
+                # On the forced turn the tools are withdrawn. Asking for a
+                # verdict is not enough: run 3's t=0.8 pass was asked, made a
+                # tool call anyway, and the loop ended with no text to parse.
+                # With no tools offered, a reply can only be the verdict.
+                tools=None if forcing else tools.SCHEMA,
                 temperature=temp,
                 reasoning_effort="xhigh",
                 tag=f"referee/{claim_id}/t{temp}",

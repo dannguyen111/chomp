@@ -150,10 +150,17 @@ def _escapes(command: str, root: Path) -> str | None:
                 f"Everything you need is in the working directory.")
     for m in _ESCAPE.finditer(command):
         tok = m.group(1)
-        # An absolute path INTO the box is fine -- the referee often cds to it.
         start = m.start(1)
-        tail = command[start:start + len(str(root)) + 1]
-        if tail.startswith(str(root)) or tail.startswith(str(root).replace("\\", "/")):
+        rest = command[start:]
+        # `2>/dev/null` is in almost every shell command ever written, and it
+        # reads nothing. Blocking it starved the referee of every command it
+        # tried to run. The /dev sinks are allowed; /dev/... anything else, and
+        # every other rooted path, is not.
+        if re.match(r"/dev/(null|zero|stdout|stderr|stdin)\b", rest):
+            continue
+        # An absolute path INTO the box is fine -- the referee often cds to it.
+        if (rest.startswith(str(root))
+                or rest.startswith(str(root).replace("\\", "/"))):
             continue
         return (f"{tok!r} reaches outside the working directory. Everything you "
                 f"need is in it; list it with `ls`. Write scratch files there, "

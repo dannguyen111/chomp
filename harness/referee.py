@@ -139,7 +139,13 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     from . import make_refbox
     restated = _restatement(root, claim_id)
     box = Path(tempfile.mkdtemp(prefix=f"refbox-{claim_id}-"))
-    box, leaks = make_refbox.build_box(root, claim, box, statement=restated)
+    # Hand over the precomputed censuses. Run 2 spent most of its 40 turns
+    # recomputing a 50000-row census the repo already had, and never reached a
+    # verdict. The referee should spend its turns on the proof, not on the
+    # solver.
+    cached = sorted((root / "GROUND_TRUTH" / "cache").glob("census_*.tsv"))
+    box, leaks = make_refbox.build_box(root, claim, box, census=cached,
+                                       statement=restated)
     if restated:
         print(f"[referee] using the provenance-free restatement of {claim_id} "
               f"from LEDGER/restatements.json")
@@ -154,16 +160,29 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     # it has to be applied here too or only the box would be clean.
     submitted = replace(claim, statement=restated) if restated else claim
 
+    TURNS = 40
     for temp in (0.3, 0.8):
         messages = build_messages(root, submitted, proof, deps)
         # The referee gets tools so it can actually hunt counterexamples.
-        for _ in range(40):
-            if budget.spent - start_spend >= max_spend:
-                print(f"[referee] hit the ${max_spend:.2f} per-claim cap; "
-                      f"forcing a verdict.")
+        for turn in range(TURNS):
+            left = TURNS - turn
+            # Both passes of the first two runs simply ran out of turns -- the
+            # spend cap never bit (they used $0.16 of $0.60) and nothing told
+            # them the end was coming, so the loop exited on a tool call and
+            # there was no verdict to parse. Warn, then force.
+            if budget.spent - start_spend >= max_spend or left <= 1:
+                print(f"[referee] forcing a verdict "
+                      f"({'spend cap' if left > 1 else 'out of turns'}).")
                 messages.append({"role": "user", "content":
-                                 "[HARNESS] Spend cap reached. Emit your JSON "
-                                 "verdict now, this turn, and nothing else."})
+                                 "[HARNESS] Stop. Emit your JSON verdict now, "
+                                 "this turn, and nothing else. If you did not "
+                                 "finish, say so in gap_description and set "
+                                 "confidence low -- do not reject a claim you "
+                                 "did not manage to check."})
+            elif left <= 6:
+                messages.append({"role": "user", "content":
+                                 f"[HARNESS] {left} turns left. Stop starting "
+                                 f"new computations and converge on a verdict."})
             reply = client.chat(
                 messages,
                 model=REFEREE_MODEL,

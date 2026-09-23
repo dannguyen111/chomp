@@ -211,3 +211,43 @@ to parse as a valid tiny census and silently poison everything downstream.
 **Does not survive the session:** the refbox sandbox (rebuild with
 `make_refbox`), the ability to resume a subagent, and the operator context --
 which is what this file is for.
+
+## 2026-09-23: the literature base was missing its most important paper
+
+C0012 was proved, refereed twice, promoted to `proven`, and is **prior art**.
+It is stated verbatim in section 8.1 of
+
+  Brouwer, Horvath, Molnar-Saska, Szabo, "On Three-Rowed Chomp",
+  INTEGERS 5 (2005) #G07,  https://math.colgate.edu/~integers/fg7/fg7.pdf
+
+one line after the recurrence: *"We see that 1 <= f(q,r) <= q+r+1."*
+
+That paper is where the recurrence in MISSION section 2 comes from, and it was
+never in `GROUND_TRUTH/fetch_sources.py`. The project vendored Byrnes,
+Zeilberger, Hegarty-Larsson and Brouwer's *webpage*; the webpage does not
+state the bound. Nobody read the source paper. Now added to the source list.
+
+**Nothing found a false statement here.** The solver was right, the proof was
+right, four adversarial passes were right. Every check the project runs was a
+check for *correctness*, and the claim was correct. It was novelty that failed,
+and `novelty_checked` sat at `false` on a claim already marked `proven` --
+the gate does not look at that field, and neither did I until now.
+
+### Two more things in that paper, unresolved
+
+- **section 8.7 (Heuristics)** already carries the sqrt(2): constant rows are
+  expected to start around `x/sqrt(2)`, about `0.7x`. C0003, C0004 and C0011
+  are all in that neighbourhood. They concern the preperiod `N(r)` and the
+  A029902 strips, which are *different quantities* from the density heuristic
+  in 8.7 -- but that has to be established, not assumed.
+- **section 8.8 (Estimates)** proves `q_n <= 3n - 1` by a counting argument of
+  the same flavour as C0012's.
+
+### Standing rule
+
+**Re-check every `novelty_checked: false` claim against #G07 before presenting
+any of it as a contribution.** There are 14 such claims, all `evidence`. Read
+fg7.pdf first -- it is six pages.
+
+A claim being `proven` says the proof survived the gate. It says nothing
+whatsoever about whether the result is new.

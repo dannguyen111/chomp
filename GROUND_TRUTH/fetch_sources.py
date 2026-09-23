@@ -27,6 +27,15 @@ import requests
 DATA = Path(__file__).resolve().parent / "data"
 
 SOURCES = {
+    "brouwer_horvath_molnarsaska_szabo_three_rowed_chomp.pdf":
+        ("https://math.colgate.edu/~integers/fg7/fg7.pdf",
+         "Brouwer, Horvath, Molnar-Saska, Szabo, 'On Three-Rowed Chomp', "
+         "INTEGERS 5 (2005) #G07. THE SOURCE OF THE RECURRENCE this whole "
+         "project is built on (section 8.1). READ IT BEFORE CLAIMING ANYTHING "
+         "ABOUT f(q,r): section 8.1 already states '1 <= f(q,r) <= q+r+1', "
+         "which is C0012. Its absence from this list until 2026-09-23 is why "
+         "C0012 was proved, refereed and promoted before anyone noticed it "
+         "was prior art."),
     "byrnes_poset_game_periodicity.pdf":
         ("http://e.math.hr/dvijeigre/byrnes/main.pdf",
          "Byrnes, Poset-Game Periodicity (Intel STS version, 20pp). "

@@ -29,6 +29,18 @@ first. See the ERRATA block at the top of `GROUND_TRUTH/byrnes_audit.md`.
   `python -m GROUND_TRUTH.fetch_sources` downloads every primary source into
   `GROUND_TRUTH/data/` (they are not committed -- the repo is public).
 
+## (Z1) WAS CLOSED IN 2005, IN PRINT. Do not work on it, do not claim it.
+
+**C0012 is prior art.** Brouwer, Horvath, Molnar-Saska & Szabo, "On Three-Rowed
+Chomp", INTEGERS 5 (2005) #G07, section 8.1, states `1 <= f(q,r) <= q+r+1` one
+line after giving the recurrence. That is exactly C0012, in the paper the
+recurrence comes from. Our proof is correct and more explicit; the result is
+not ours. Cite #G07. See the PRIOR ART block at the top of `proofs/C0012.md`.
+
+Read `fg7.pdf` (now in `fetch_sources.py`) before claiming ANY property of
+`f(q,r)`. It was missing from the source list until 2026-09-23, which is the
+whole reason C0012 went proved -> refereed -> promoted before anyone checked.
+
 ## BOTH HALVES OF (Z1) ARE CLOSED. Do not work on it.
 
 Two independent results, from two different directions, and neither needs

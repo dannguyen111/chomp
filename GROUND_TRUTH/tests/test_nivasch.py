@@ -77,5 +77,43 @@ def test_brouwer_pattern_table(ctx) -> str:
     return f"{checked} published (r, start, period, pattern) rows match exactly"
 
 
+def test_fg7_period_claim_is_wrong(ctx) -> str:
+    """#G07 section 8.2 claims two periods that do not exist.  Pin the conflict.
+
+    Brouwer, Horvath, Molnar-Saska & Szabo, "On Three-Rowed Chomp",
+    INTEGERS 5 (2005) #G07, section 8.2, immediately after correctly giving
+    period 2 for r = 120, says:
+
+        "Later one finds larger periods, like period 25 for r = 782
+         and period 720 for r = 7751."
+
+    Both rows are below r = 10000, where Nivasch's census -- which Brouwer
+    endorses on his own maintained page ("Gabriel Nivasch wrote (and I
+    agree)") -- finds periods 2, 3, 4 and 9 only, and lists neither row.
+    No period 25 or 720 appears anywhere on that page.
+
+    Our solver says r = 782 is live with period 1 (a plain linear row, which
+    is why it is in no pattern table) and r = 7751 is STALE -- finitely many
+    P-positions, so no period at all.  The indexing is not in doubt: #G07 and
+    the solver agree that r = 120 has period 2.
+
+    So section 8.2 is an error, silently superseded by the later census.
+    This test does not assert #G07 is wrong as a matter of taste; it pins what
+    the solver says, so that a future reader who finds that sentence gets an
+    explanation instead of a scare.
+    """
+    if ctx.max_r < 7751:
+        return f"SKIP (max_r={ctx.max_r} < 7751)"
+    cen = ctx.census
+    a, b = cen[782], cen[7751]
+    check(a["cls"] == "live" and a["period"] == 1,
+          f'r=782 expected live/period 1, got {a["cls"]}/period {a["period"]}')
+    check(b["cls"] == "stale",
+          f'r=7751 expected stale, got {b["cls"]}/period {b["period"]}')
+    return ("#G07 section 8.2 contradicted as expected: r=782 is period 1 "
+            "(not 25), r=7751 is stale (not period 720)")
+
+
 TESTS = [test_period_lists_exact, test_no_other_periods,
-         test_period9_exactly_6541_and_8767, test_brouwer_pattern_table]
+         test_period9_exactly_6541_and_8767, test_brouwer_pattern_table,
+         test_fg7_period_claim_is_wrong]

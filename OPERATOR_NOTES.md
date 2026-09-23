@@ -233,15 +233,30 @@ check for *correctness*, and the claim was correct. It was novelty that failed,
 and `novelty_checked` sat at `false` on a claim already marked `proven` --
 the gate does not look at that field, and neither did I until now.
 
-### Two more things in that paper, unresolved
+### The other two overlaps, now resolved
 
-- **section 8.7 (Heuristics)** already carries the sqrt(2): constant rows are
-  expected to start around `x/sqrt(2)`, about `0.7x`. C0003, C0004 and C0011
-  are all in that neighbourhood. They concern the preperiod `N(r)` and the
-  A029902 strips, which are *different quantities* from the density heuristic
-  in 8.7 -- but that has to be established, not assumed.
-- **section 8.8 (Estimates)** proves `q_n <= 3n - 1` by a counting argument of
-  the same flavour as C0012's.
+Checked the same day, and the earlier wording here overstated the risk.
+
+- **section 8.4 / 8.6** give the strips empirically, with the constants:
+  `alpha = 1 + 1/sqrt(2)` and `beta = 1 + sqrt(2)`, and the bands
+  `alpha n - 1.242 < d_n < alpha n + 2.141`, `beta n - 1.506 < q_n < beta n + 1.493`,
+  `alpha n - 1.853 < r_n < alpha n + 0.780`. **C0011 already cites and reproduces
+  these**, so it was never a novelty failure. Its content is SATURATION (the sup
+  stops rising) and the extension to `r = 50000`, neither of which is in #G07.
+  Both stand.
+  *Attribution:* `alpha` and `beta` are in #G07 (2005), two years before
+  Friedman-Landsberg (2007). "The Friedman-Landsberg strips" credits the wrong
+  paper for the constants; F-L give the renormalisation derivation of them.
+- **section 8.7** heuristics and **8.4/8.6** strips are all about `d_n`, `q_n`,
+  `r_n`. **None is `N(r)`, the preperiod**, which #G07 does not treat. So C0003
+  is new as a statement -- but it is one more instance of a pattern #G07 already
+  documents for three sibling sequences, with a constant in the same family
+  (`sqrt(2) = beta - 1`), and should be presented that way.
+- **section 8.8** proves `q_n <= 3n - 1` by a counting argument of the same
+  flavour as C0012's.
+
+C0003 and C0011 are now `novelty_checked: true`. Twelve `evidence` claims remain
+unchecked.
 
 ### Standing rule
 

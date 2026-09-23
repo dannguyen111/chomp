@@ -266,3 +266,40 @@ fg7.pdf first -- it is six pages.
 
 A claim being `proven` says the proof survived the gate. It says nothing
 whatsoever about whether the result is new.
+
+## 2026-09-23 (later): two more things the source list was missing
+
+### A 2026 paper works in our exact recurrence
+
+Erez Sheiner, "Unique Winning Opening Move in Three-Row Chomp",
+arXiv:2605.23837, v1 2026-05-22, v2 2026-06-09. Now in `fetch_sources.py`.
+
+It proves every 3xn Chomp rectangle has exactly one winning opening move,
+settling the three-row case of Gale's 52-year-old question -- which is
+**#G07 section 8.12's "most interesting" open problem** -- working directly in
+Brouwer's `f(q,r)`. Its tool is a *rightmost-hole principle* on the sets
+`C(q,r)`, and it yields a partition of the positive integers by A029900 /
+A029901.
+
+**Nobody on this project has read it.** It is the most recent work on the exact
+object we are studying and it is four months old. Two specific exposures:
+
+- its A029900 / A029901 partition is adjacent to **C0017** (the claimed bridge
+  `A029902(n) = f(n,n)`);
+- its rightmost-hole principle is a structural fact about `C(q,r)`, which is
+  the same set C0012's counting argument bounds.
+
+### C0011 is better than we thought
+
+#G07 8.12 says proving `d_n, r_n ~ alpha n` and `q_n ~ beta n` suffices for
+uniqueness. Sheiner got uniqueness *without* those asymptotics and does not
+establish them, so **the asymptotics are still open**. C0011's saturation is
+strictly stronger than them. It is not a reproduction of Brouwer's table; it is
+empirical evidence on a published open problem, and proving it would close the
+second half of 8.12.
+
+### Revised standing rule
+
+Read #G07 **and** arXiv:2605.23837 before claiming anything. The lesson of
+C0012 was not "check novelty at the end" -- it was that the project spent two
+days building on a recurrence whose source paper it had never opened.

@@ -27,6 +27,17 @@ import requests
 DATA = Path(__file__).resolve().parent / "data"
 
 SOURCES = {
+    "sheiner_unique_winning_opening_move_three_row_chomp.pdf":
+        ("https://arxiv.org/pdf/2605.23837",
+         "Erez Sheiner, 'Unique Winning Opening Move in Three-Row Chomp', "
+         "arXiv:2605.23837 (v1 2026-05-22, v2 2026-06-09). THE MOST RECENT WORK "
+         "ON THIS EXACT RECURRENCE -- it works in Brouwer's f(q,r) directly. "
+         "Settles the three-row case of Gale's uniqueness question, which is "
+         "#G07 section 8.12's 'most interesting' open problem, via a "
+         "'rightmost-hole principle' on the sets C(q,r). It does NOT prove the "
+         "alpha/beta asymptotics, so that half of 8.12 is still open. Its "
+         "partition of the positive integers by A029900 / A029901 is adjacent "
+         "to C0017 -- check before claiming anything there."),
     "brouwer_horvath_molnarsaska_szabo_three_rowed_chomp.pdf":
         ("https://math.colgate.edu/~integers/fg7/fg7.pdf",
          "Brouwer, Horvath, Molnar-Saska, Szabo, 'On Three-Rowed Chomp', "

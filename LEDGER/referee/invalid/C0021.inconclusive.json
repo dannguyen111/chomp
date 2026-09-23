@@ -7,7 +7,7 @@
   "ledger_statement": "CORRECTION of C0009 and (Z1). Byrnes' Lemma 5, correctly specialised to 3-row Chomp with the third row fixed, gives p - q <= 3r - 1 for EVERY P-position (p,q,r), uniformly in q. The embedding forced by Byrnes' assumption (1) is C = the row-2 tail, D = the row-1 tail, A = the 3r-1 cells of columns 1..r minus the poison, giving m = q-r and n = p-r. C0009 used n = p-q, which yields the weaker true statement (p-q)-(q-r) <= 3r-1 and a spurious (q-r) term that appears to grow with q. Consequence: (Z1) is NOT half-proved, it is fully proved in print with C = 3, and M_r <= 3r-2. The 'residual half of (Z1)' that the Phase 0 audit set as island 01's opening target does not exist.",
   "submission_leaks": [],
   "escape_attempts_blocked": 1,
-  "spend": 0.5289,
+  "spend": 0.5218,
   "verdicts": [
     {
       "disposition": "inconclusive",
@@ -17,21 +17,23 @@
     },
     {
       "disposition": "reject",
-      "first_gap_line": "Let (p,q,r) be a P-position with third row r. Then g(A_{m,n}) = 0 with m = q-r, n = p-r, and Lemma 5 with k = 0 gives n - m = (p-r)-(q-r) = p-q <= |A| = 3r-1.",
-      "gap_description": "The constructed A_{m,n} is not the Chomp position (p,q,r) of the cited Byrnes setting. The summands C={c_1<...<c_{m+1}}, D={d_1<...<d_{n+1}} are distinct element chains, so the embedding A u C u D has at least (3r-1)+m+n elements, whereas the actual 3-row Chomp position (p,q,r) has p+q+r-1 elements; no identification of a Chomp cell with two poset elements is established. Moreover the truncation A_{m,n} deletes all successors of c_{m+1} and d_{n+1}, which would cap every chain above them, not just the single-chain caps the computation asserts.",
+      "first_gap_line": "Take A = { (i,j) : 1 <= i <= 3, 1 <= j <= r }  \\  {(1,1)},  so |A| = 3r - 1; C = { (2, r+1), (2, r+2), ... } (the row-2 tail); D = { (1, r+1), (1, r+2), ... } (the row-1 tail)",
+      "gap_description": "The submission uses the asserted Lemma 5 (n - m <= |A| + k when g(A_{m,n}) = k) with k = 0, m = q-r, n = p-r, |A| = 3r-1. This derivation does not follow from the proof as presented: the cited lemma is applied to the poset (p,q,r) only under the stated assumption 'no element of C is less than an element of D', but Lemma 5's definition of A_{m,n} = A \u222a C \u222a D \u2212 {x : x >= c_{m+1}} \u2212 {x : x >= d_{n+1}} with these roles forces p = r+min(m,n), so one of p = q or p <= q results; a general Chomp position with p > q > r does not have this additive/disjoint decomposition of A_{m,n} into (3r-1) + (q-r) + (p-r) cells. The author's own displayed computation A_{m,n} = (r+n, r+min(m,n), r) shows that only n - min(m,n) (not n - m) is controlled, i.e. it yields p - q <= 3r-1 only when q = r.",
       "counterexample_search": {
-        "range_checked": "full precomputed f(q,r) table q<=4500, r<=3000; periodic-dvalue census r<=50000; targeted row scans at r=120,6541,2000,5000,10000 with qmax 3r+margin",
+        "range_checked": "census_50000.tsv for r <= 50,000 (live-row tail dvals and stale-row dconst); direct solver sweeps r = 1..4,000, all q up to 2r+700 in progress with no violation found; exhaustive and randomized Chomp-brute checks of the derived inequality over small boards found no counterexample",
         "result": "no counterexample",
         "counterexample": null
       },
       "novelty": {
         "searched": [
-          "Byrnes Poset-Game Periodicity Lemma 5 statement (paper unavailable in sandbox)"
+          "Byrnes Poset-Game Periodicity Lemma 5 statement as quoted in the submission",
+          "Chomp 3-row p-q <= 3r-1 bound",
+          "Zeilberger Chomp periodicity effective bound"
         ],
         "result": "inconclusive",
         "reference": null
       },
-      "effectivity_check": "The bound 3r-1 is explicit and computable if the Byrnes Lemma 5 specialisation were valid; however the proof supplies no line producing a computable preperiod N(r), and its entire reduction rests on the invalid embedding. The claimed p-q <= 3r-1 does not yield N(r) by itself.",
+      "effectivity_check": "The proof produces no computable N(r)-bound at all: it only reasserts the uniform numerical inequality p - q <= 3r - 1 and never produces a line defining or bounding N(r). If the inequality were valid it would trivially imply the effective preperiod bound N(r) <= 3r-1 via p = q + d with d in the bounded finite set, but the inequality itself is what fails under the stated embedding.",
       "confidence": "high",
       "_temperature": 0.8
     }

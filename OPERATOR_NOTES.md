@@ -303,3 +303,56 @@ second half of 8.12.
 Read #G07 **and** arXiv:2605.23837 before claiming anything. The lesson of
 C0012 was not "check novelty at the end" -- it was that the project spent two
 days building on a recurrence whose source paper it had never opened.
+
+## 2026-09-26: Sheiner arXiv:2605.23837, read in full
+
+Ten pages. What it does, and what it means for us.
+
+### What it proves
+
+Theorem 1.1: every `[n,n,n]` has exactly one winning opening move. The route is
+Prop 4.4 -- the positive integers partition into `D = {f(a,a)}` and
+`S = {p : f(p,r)=p for some r<p}`, i.e. **A029900 and A029901 are
+complementary**. That is precisely the conjecture #G07 section 8.6 states and
+leaves open. So Sheiner closed it.
+
+### Nothing of ours is subsumed
+
+- **C0012** (`f(q,r) <= q+r+1`) is NOT in Sheiner. Its prior art remains #G07
+  section 8.1 alone.
+- **C0017** is clear. Sheiner partitions A029900 / A029901 as SETS; C0017 is a
+  quantitative `O(1)` relation between A029902(n) and `f(n,n)`, different
+  sequences and a different kind of statement. He gives no asymptotics or O(1)
+  relations anywhere.
+- **C0011** is untouched, as already recorded: he gets uniqueness without the
+  alpha/beta asymptotics, so #G07 8.12's second half stays open.
+
+### What he has that we should use
+
+- **Lemma 2.3(a): for fixed `q`, the values `f(q,0),...,f(q,q)` are distinct.**
+  A clean structural fact we never stated.
+- **Lemma 4.1: `f(q,q) = max_r f(q,r)`, and `f(q,q) > q`.** This is Brouwer's
+  section 8.3 made rigorous, and the `> q` comes from distinctness: `q+1`
+  distinct positive integers force a maximum of at least `q+1`. It is a LOWER
+  bound on the diagonal, exactly complementary to C0012's upper bound. Our
+  proof file for C0012 should cite it as the matching side.
+- His `B(q,r) = R(q,r) u C(q,r)` agrees with our recurrence: his
+  `f(a,min(a,r))` for `a < r` is our branch (A). His closed forms
+  `f(q,0)=q+1`, `f(1,1)=3`, `f(q,1)=2 (q>=2)`, `f(q,2)=q+2 (q>=2)` match the
+  solver, including the `(1,1)` tight cell C0012 documents.
+
+### The line that matters most for us
+
+> "As an independent check, the proof has been fully formalized and
+> machine-verified in the Lean 4 proof assistant, using only its standard
+> library."
+
+Someone has already formalized this recurrence in Lean 4 with mathlib alone:
+well-definedness of `f` (his Lemma 2.1), the two-branch recurrence, the mex,
+distinctness, diagonal maximality. That is the exact base layer we costed at
+roughly a day, and it is the part that makes C0012 and C0021 cheap once it
+exists.
+
+**The development is not linked in the paper** -- the only URLs are Brouwer's
+page and the two OEIS entries. So it is either unpublished, an ancillary file,
+or available on request. Worth asking the author before rebuilding it.

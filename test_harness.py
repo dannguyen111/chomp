@@ -61,6 +61,47 @@ def test_tools_protect_ground_truth():
     print("  tools: GROUND_TRUTH protected, traversal blocked, scratch writable")
 
 
+def test_sandbox_allows_scratch_but_not_escape():
+    """The referee must be able to write and run a verification script.
+
+    Run 7 (C0021, 2026-09-23) was blocked on
+    `mkdir -p /tmp/gtest && cat > /tmp/gtest/grundy.py`, never retried inside
+    the box, and then rejected a correct claim at high confidence on reasoning
+    it had not checked.  /tmp holds nothing about this project; the controls
+    that protect provenance are the network block, the sweep block, and the
+    refusal of rooted paths into the real checkout.  This test pins both sides:
+    scratch is writable, escapes still are not.
+    """
+    from pathlib import Path
+    box = Path("/home/runner/work/chomp/chomp/refbox")
+    allow = [
+        "mkdir -p /tmp/gtest && cat > /tmp/gtest/grundy.py <<'EOF'",
+        "python3 /tmp/gtest/grundy.py",
+        "cd /tmp && python3 -c 'print(1)'",
+        "ls /tmp/gtest",
+        "python3 -c 'print(7 / 2)'",          # division must survive; it did not once
+        "grep -n foo claim.md 2>/dev/null",
+        "cat submission.md",
+    ]
+    deny = [
+        "curl https://example.com",           # network: novelty is not its call
+        "git log --oneline",
+        "pip install sympy",
+        "ls -la / && find / -maxdepth 3 -iname '*chomp*'",   # run 1 tried this
+        "cat /home/runner/work/chomp/chomp/LEDGER/claims.jsonl",
+        "cat ../../MISSION.md",
+        "cat ~/.config/gh/hosts.yml",
+        "cat /etc/passwd",
+        "cat /tmpfoo/secrets",                # the /tmp rule must not match a prefix
+    ]
+    for c in allow:
+        assert tools._escapes(c, box) is None, f"should allow: {c!r}"
+    for c in deny:
+        assert tools._escapes(c, box) is not None, f"should deny: {c!r}"
+    print(f"  sandbox: {len(allow)} scratch/analysis commands allowed, "
+          f"{len(deny)} escapes refused")
+
+
 def test_tools_clip_runaway_output():
     out = tools.dispatch("bash", {"command": "python -c \"print('x'*200000)\""}, ROOT)
     assert len(out) < tools.MAX_OUTPUT + 500 and "elided" in out
@@ -153,6 +194,7 @@ if __name__ == "__main__":
         test_dependency_validation_and_ids,
         test_malformed_line_survivable,
         test_tools_protect_ground_truth,
+        test_sandbox_allows_scratch_but_not_escape,
         test_tools_clip_runaway_output,
         test_prompt_ordering_and_fingerprint,
         test_budget_hard_cap,

@@ -158,13 +158,27 @@ def _escapes(command: str, root: Path) -> str | None:
         # every other rooted path, is not.
         if re.match(r"/dev/(null|zero|stdout|stderr|stdin)\b", rest):
             continue
+        # Scratch space. The referee reaches for /tmp by habit when it wants to
+        # write a verification script, and refusing that cost run 7 its verdict:
+        # it was blocked once (`mkdir -p /tmp/gtest && cat > /tmp/gtest/grundy.py`),
+        # never retried inside the box, and rejected a correct claim on reasoning
+        # it had not run. /tmp on a fresh runner holds nothing about this project.
+        # The controls that actually protect provenance are the network block,
+        # the sweep block, and the refusal of rooted paths into the real
+        # checkout -- all of which still stand. A referee that can run its own
+        # counterexample search is the entire point of the sandbox having a
+        # shell at all.
+        if re.match(r"/tmp\b", rest):
+            continue
         # An absolute path INTO the box is fine -- the referee often cds to it.
         if (rest.startswith(str(root))
                 or rest.startswith(str(root).replace("\\", "/"))):
             continue
         return (f"{tok!r} reaches outside the working directory. Everything you "
-                f"need is in it; list it with `ls`. Write scratch files there, "
-                f"not in /tmp.")
+                f"need to judge the submission is in it; list it with `ls`. "
+                f"Write scratch files in the working directory or under /tmp -- "
+                f"both are writable. A verification script you actually ran is "
+                f"worth more than an argument you did not check.")
     return None
 
 

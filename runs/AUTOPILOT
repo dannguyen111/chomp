@@ -8,8 +8,8 @@ takes effect at the next cron without cancelling anything already running.
   git rm runs/AUTOPILOT && git commit -m "autopilot off" && git push
 
 What runs
-  03:00 UTC  session.yml   one explorer session, cap $1.50, islands alternate
-  09:00 UTC  referee.yml   auto mode, cap $0.75, at most 1 claim
+  03:17 UTC  session.yml   one explorer session, cap $1.50, islands alternate
+  09:17 UTC  referee.yml   auto mode, cap $0.75, at most 1 claim
 
 Six hours apart because a session may run up to 355 minutes; the referee needs
 a ledger the session has finished writing and pushed. Both share the `chomp`

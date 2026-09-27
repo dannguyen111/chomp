@@ -14,8 +14,13 @@ on:
     # ~$1.32/session would have emptied the remaining budget in under six days
     # -- and sessions 1 and 2 already showed that back-to-back runs on a ledger
     # that gains one result tend to repeat each other rather than go deeper.
-    # The referee runs six hours later, at 09:00, so it reads a finished ledger.
-    - cron: "0 3 * * *"
+    # The referee runs six hours later, at 09:17, so it reads a finished ledger.
+    #
+    # :17 rather than :00 on purpose. GitHub's scheduler is best-effort and
+    # queues hardest on the hour, where everyone else's crons are; off-peak
+    # minutes are delayed less and dropped less often. The exact minute does
+    # not matter to us, so there is no reason to stand in that queue.
+    - cron: "17 3 * * *"
   workflow_dispatch:
     inputs:
       island:

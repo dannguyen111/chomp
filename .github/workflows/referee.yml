@@ -21,10 +21,15 @@ name: referee
 
 on:
   schedule:
-    # 09:00 UTC, six hours after the session cron. A session can run 355
+    # 09:17 UTC, six hours after the session cron. A session can run 355
     # minutes, so this is the first hour at which yesterday's work is reliably
-    # committed and pushed.
-    - cron: "0 9 * * *"
+    # committed and pushed. If it is not -- a long session plus a scheduler
+    # delay -- the shared `chomp` concurrency group queues this run behind it
+    # rather than letting the two race the ledger.
+    #
+    # :17 for the same reason as the session: GitHub's scheduler queues hardest
+    # on the hour, and the exact minute is worth nothing to us.
+    - cron: "17 9 * * *"
   workflow_dispatch:
     inputs:
       claim_id:

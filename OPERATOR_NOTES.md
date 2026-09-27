@@ -22,7 +22,7 @@ pre-screens were billed to the Claude plan instead.
 | Proven | **C0012** -- and it is prior art (#G07 section 8.1). See the novelty note. |
 | Refereeable now | C0021 only (`lemma` + proof file); it has survived 3 runs unresolved |
 | Autopilot | **ON** since 2026-09-27 -- see `runs/AUTOPILOT`, which is the off switch |
-| Cron | session 03:00 UTC daily (cap $1.50); referee 09:00 UTC daily (cap $0.75, 1 claim) |
+| Cron | session 03:17 UTC daily (cap $1.50); referee 09:17 UTC daily (cap $0.75, 1 claim) |
 
 Sessions run so far:
 

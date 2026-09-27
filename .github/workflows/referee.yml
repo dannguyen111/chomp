@@ -5,10 +5,26 @@ name: referee
 # twice, at two temperatures. Nothing else in the pipeline can promote a claim,
 # and nothing else can kill a false one.
 #
-# Manual only, and deliberately not chained onto `session`. A session ending at
-# 3am should not be able to promote its own work while nobody is looking.
+# Was manual only, deliberately: a session ending at 3am should not be able to
+# promote its own work while nobody is looking. Autopilot changes that, and the
+# tradeoff is accepted knowingly, with three things standing in for the human:
+#
+#   1. Only an AGREED, finished, explicit accept can promote. A split verdict
+#      is `unresolved` and leaves the claim open -- run 8 exercised exactly
+#      that path and correctly refused to promote on a 0.3-accept/0.8-reject.
+#   2. The ledger is append-only, so every promotion is reversible, and the
+#      operator has reverted three bad ones already.
+#   3. The daily digest reports every status change the morning after.
+#
+# It is still NOT chained onto `session`: it runs on its own cron six hours
+# later, so it reads a ledger the session has finished writing and pushed.
 
 on:
+  schedule:
+    # 09:00 UTC, six hours after the session cron. A session can run 355
+    # minutes, so this is the first hour at which yesterday's work is reliably
+    # committed and pushed.
+    - cron: "0 9 * * *"
   workflow_dispatch:
     inputs:
       claim_id:
@@ -40,15 +56,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Gate on budget
+      - name: Gate on autopilot and budget
         id: gate
         run: |
           set -euo pipefail
+          # One switch for the whole loop: the same file that gates `session`.
+          if [ "${{ github.event_name }}" = "schedule" ] && [ ! -f runs/AUTOPILOT ]; then
+            echo "Autopilot off. Commit an empty runs/AUTOPILOT to enable the cron."
+            echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            SPEND=0.75; CLAIMS=1; CLAIM=auto
+          else
+            SPEND="${{ inputs.max_spend || '1.00' }}"
+            CLAIMS="${{ inputs.max_claims || '3' }}"
+            CLAIM="${{ inputs.claim_id || 'auto' }}"
+          fi
+          { echo "spend=$SPEND"; echo "claims=$CLAIMS"; echo "claim=$CLAIM"; } >> "$GITHUB_OUTPUT"
           REMAIN=$(python -c "import json;d=json.load(open('BUDGET.json'));print(d['cap']-d['spent'])")
-          echo "Remaining: \$$REMAIN"
-          python -c "import sys;sys.exit(0 if $REMAIN >= 1.0 else 1)" \
+          echo "Remaining: \$$REMAIN   cap for this run: \$$SPEND   target: $CLAIM"
+          python -c "import sys;sys.exit(0 if $REMAIN >= $SPEND else 1)" \
             && echo "go=true" >> "$GITHUB_OUTPUT" \
-            || { echo "Budget too low to referee."; echo "go=false" >> "$GITHUB_OUTPUT"; }
+            || { echo "Budget below this run's cap."; echo "go=false" >> "$GITHUB_OUTPUT"; }
 
       - uses: actions/setup-python@v5
         if: steps.gate.outputs.go == 'true'
@@ -81,10 +110,10 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           chmod +x GROUND_TRUTH/solver
-          python -m harness.referee "${{ inputs.claim_id || 'auto' }}" \
+          python -m harness.referee "${{ steps.gate.outputs.claim }}" \
             --root . \
-            --max-spend "${{ inputs.max_spend || '1.00' }}" \
-            --max-claims "${{ inputs.max_claims || '3' }}"
+            --max-spend "${{ steps.gate.outputs.spend }}" \
+            --max-claims "${{ steps.gate.outputs.claims }}"
 
       - name: Commit verdicts
         if: always() && steps.gate.outputs.go == 'true'

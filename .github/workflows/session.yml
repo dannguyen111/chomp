@@ -10,7 +10,12 @@ name: session
 
 on:
   schedule:
-    - cron: "0 */8 * * *"
+    # Once a day, 03:00 UTC. It was every 8 hours, which at the observed
+    # ~$1.32/session would have emptied the remaining budget in under six days
+    # -- and sessions 1 and 2 already showed that back-to-back runs on a ledger
+    # that gains one result tend to repeat each other rather than go deeper.
+    # The referee runs six hours later, at 09:00, so it reads a finished ledger.
+    - cron: "0 3 * * *"
   workflow_dispatch:
     inputs:
       island:
@@ -50,13 +55,24 @@ jobs:
             echo "Autopilot off. Commit an empty runs/AUTOPILOT to enable the cron."
             echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          # Autopilot runs on a fixed small cap; a human dispatching by hand can
+          # ask for more. Without this the scheduled run inherited the 5.00
+          # default and three crons a day could spend $15.
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            CAP=1.50
+          else
+            CAP="${{ inputs.session_cap || '5.00' }}"
+          fi
+          echo "cap=$CAP" >> "$GITHUB_OUTPUT"
           REMAIN=$(python -c "import json;d=json.load(open('BUDGET.json'));print(d['cap']-d['spent'])")
-          echo "Remaining: \$$REMAIN"
+          echo "Remaining: \$$REMAIN   this session's cap: \$$CAP"
           # Below one session's worth, stop rather than start something that
-          # will be cut off mid-proof.
-          python -c "import sys;sys.exit(0 if $REMAIN >= 5.0 else 1)" \
+          # will be cut off mid-proof. Gate on the cap actually in use, not a
+          # hardcoded 5.00 -- otherwise autopilot stops with $4.99 unspent and
+          # $1.50 sessions still perfectly affordable.
+          python -c "import sys;sys.exit(0 if $REMAIN >= $CAP else 1)" \
             && echo "go=true" >> "$GITHUB_OUTPUT" \
-            || { echo "Budget too low for a full session."; echo "go=false" >> "$GITHUB_OUTPUT"; }
+            || { echo "Budget below this session's cap."; echo "go=false" >> "$GITHUB_OUTPUT"; }
 
       - uses: actions/setup-python@v5
         if: steps.gate.outputs.go == 'true'
@@ -99,7 +115,7 @@ jobs:
           python -m harness.session \
             --root . \
             --island "${{ steps.pick.outputs.island }}" \
-            --session-cap "${{ inputs.session_cap || '5.00' }}" \
+            --session-cap "${{ steps.gate.outputs.cap }}" \
             --max-output-tokens 1430000 \
             --max-minutes 300
 

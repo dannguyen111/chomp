@@ -48,9 +48,7 @@ anything further:
 
 **C0012 (session 1).** `f(q,r) <= q + r + 1`, hence `max_q (f(q,r)-q) <= r+1`.
 Four-line induction; branch (C) takes a mex over at most `q+r` positive
-integers, so one of `1..q+r+1` is missing. Proof written out in
-`proofs/C0012.md`. Re-verified: 0 violations over the full table `q,r<=400`
-and all 20711 live rows to `r<=50000`; tight at 402 cells (the row `r=0`).
+integers, so one of `1..q+r+1` is missing. Proof in `proofs/C0012.md`.
 
 **C0021 (2026-09-21 correction).** Byrnes' Lemma 5, correctly specialised,
 gives `p - q <= 3r - 1` for every P-position, uniformly in `q`. Proof in
@@ -58,39 +56,46 @@ gives `p - q <= 3r - 1` for every P-position, uniformly in `q`. Proof in
 
 C0012 is the sharper of the two (`r+1` against `3r-1`). C0021 matters because
 it corrects a **wrong coordinate in the Phase 0 audit**: C0009 read Byrnes'
-`n` as `p-q`, but his assumption (1) forces `n = p-r`. The "residual half of
-(Z1)" that the Phase 0 notes set as this island's opening target was an
-artefact of that slip and never existed. C0009 and C0010 are superseded; read
-the ERRATA block at the top of `GROUND_TRUTH/byrnes_audit.md` before using
-that document.
+`n` as `p-q`, but his assumption (1) forces `n = p-r`.
 
-C0013 chains C0012 into an explicit `N(r) <= 2^(2^r poly(r))`. It is logged as
-a `conjecture`, not a lemma, and **its displayed closed form is wrong**: the
-Zeilberger state count omits the preperiod `a_0(r)` of the instant-winner
-sequence, so the true shape is the recursion
-`N(r) + period(r) <= a_0(r) + p_r (M_r+1)^(M_r)` (C0023).
+## The recursion IS NOW CLOSED (session S20260928T0956): C0024
 
-## What is actually left
+C0013 (the old closed-form bound) was **wrong** — it omitted the preperiod of
+the instant-winner sequence, exactly as C0023 flagged. **C0024 is the honest
+repair, and it is a `lemma` with a complete proof** (`proofs/C0024.md`):
 
-Per C0022, exactly one gap for a closed-form bound:
+> In Zeilberger coordinates `[c,a,b]` with `B_c(a) = f(c+a,c)-(c+a)`,
+> `u_c = N(c)-c`, `p_c = period(c)` (1 for stale rows), `q_r = lcm{p_c:c<r}`,
+> `m_r = 1 + max{B_c(a):c<r,a>=0}`, `t_r = max(max u_c, r)`:
+> `p_r <= q_r(m_r+1)^{m_r}` and
+> `u_r <= max(t_r,m_r) + q_r(m_r+1)^{m_r}`.
+> Hence an **effective recursion** `N(r) <= r + max(t_r,m_r) + q_r(m_r+1)^{m_r}`
+> (stale rows: `+ 1`), with every right-hand quantity computed from the solved
+> rows `c < r`.
 
-> **(Z2)** an explicit bound on `lcm{period(c) : c < r}`.
+The preperiod bound for the instant winners is **Lemma P** in the proof:
+`W_r(a) = ⋃_{c<r}({B_c(a+r-c)} ∪ {B_c(0)-(r-c)-a} ∩ Z>=0)` is `q_r`-periodic
+for `a >= t_r`. This is the piece that was missing; there is nothing
+non-effective anywhere in the chain. Verified numerically r<=400, a<=1400
+(F1–F5; see `scratch/verify_recursion.py`), live and stale rows both.
 
-And for *effectivity* alone, nothing: on the Zeilberger route `M_r` and `p_r`
-are computed from the already-solved rows `c < r`, so the procedure is already
-effective. (Z2) buys an a priori closed form, not computability. Be precise
-about which of the two you are claiming.
+This achieves **effectivity** (MISSION section 4's "any computable form" is a
+success) but **not** a closed form: `q_r` is defined by the recursion. Closing
+to a closed form is exactly (Z2), still open. The state-machinery subtlety:
+the state must carry the phase `a mod q_r` (otherwise `W_r(a+1)` is not
+determined by the state); the count `q_r(M+1)^M` is unchanged by this.
 
-The remaining worthwhile targets, in order:
+## What is actually left (updated)
 
-1. **(Z2).** Observed periods to `r=50000` are `{1,2,3,4,6,8,9}`, lcm 72. A
-   bound on the lcm suffices; you do not need to bound the periods themselves.
-2. **Write the corrected chain out.** With `M_r <= min(r+1, 3r-2)` from C0012,
-   the preperiod-corrected recursion of C0023, and (Z2), produce a single
-   explicit `N(r) <= ...` and log it as a lemma with a proof file.
-3. **(B1)**, a computable `K(r)` bounding the last `q` at which a stale row
-   carries a P-position. Still open for Byrnes' proof specifically, and the
-   more interesting question. Note it is a threshold in `p-r`, not in `q`.
+1. **(Z2).** An a priori bound on `lcm{period(c) : c < r}` is the only gap
+   between C0024's recursion and a closed form. Observed lcm to r=50000 is 72.
+   Periods observed: {1,2,3,4,6,8,9}.
+2. **(B1)**, a computable `K(r)` bounding the last `q` at which a stale row
+   carries a P-position. Still open for Byrnes' proof specifically. C0024
+   bounds it (`q-r <= max(t_r,m_r)+q_r(m_r+1)^{m_r}`) but only through the
+   Zeilberger route.
+3. **Referee C0024.** The proof is written and numeric checks scripted, but it
+   has not been through the referee gate.
 
 ## Facts about `f` you can use without recomputing
 
@@ -101,12 +106,10 @@ The remaining worthwhile targets, in order:
   forever, and `N(r) = f(q,r) + 1` for that `q`. Verified for all 29289.
 - `N(r) = sqrt(2) r + O(1)`: `-3.1565 <= N(r) - sqrt(2) r <= 5.6959` over all
   50000 rows, and the sup stops moving after `r = 26475`.
-- This holds for **every** class, not just the period `>= 2` rows that the
-  literature happens to tabulate.
 - `max_q (f(q,r) - q) = (sqrt(2)/2) r + O(1)`; `f(r,r) = (1+sqrt(2)/2) r + O(1)`.
-- Periods to `r=50000`: 1 (19787), 2 (675), 3 (29), 4 (212), 6 (1), 8 (3),
-  9 (4). Periods 6 and 8 are **new** -- not in Nivasch's published census, which
-  stops at 10000. lcm of all observed periods is 72.
+- Periods to `r=50000`: 1 (49077), 2 (675), 3 (29), 4 (212), 6 (1), 8 (3),
+  9 (4). lcm = 72. Periods 6 and 8 are **new**, not in Nivasch's census
+  (which stops at 10000).
 
 ## Using the solver
 
@@ -119,18 +122,15 @@ GROUND_TRUTH/solver column --r 6541               # period / preperiod
 GROUND_TRUTH/solver census --rmax 20000 --out /tmp/c.tsv
 ```
 
-`GROUND_TRUTH/cache/` is restored from the phase0 Actions cache and holds a
-census at whatever `max_r` phase0 ran with. Recomputing is cheap: r=10000 takes
-5 s, r=50000 takes 436 s and ~200 MB peak.
-`--alpha`/`--margin` move the horizon; `alpha=6` changes nothing for `r<=6000`,
-so the preperiods are not horizon artefacts.
+`GROUND_TRUTH/cache/` holds the r=50000 census (`census_50000.tsv`).
+Recomputing is cheap: r=10000 takes 5 s, r=50000 takes 436 s and ~200 MB peak.
+`--alpha`/`--margin` move the horizon; `alpha=6` changes nothing for `r<=6000`.
 
 ## Settled tension with MISSION -- read this before you plan
 
 `LEDGER/mission_disputes.md` records that MISSION section 3's blanket claim
 ("yields no computable bound") is right for Byrnes' general poset-game theorem
 but too strong for Zeilberger's 3-row proof. **The project owner has resolved
-this dispute in favour of the redirect** (see the RESOLVED block in that file,
-dated 2026-09-20). The order of attack above is the authorised one; you do not
-need to relitigate it, and you should not spend tokens re-reading Byrnes to
-check. Read `GROUND_TRUTH/byrnes_audit.md` instead -- it has the quotes.
+this dispute in favour of the redirect** (see the RESOLVED block, dated
+2026-09-20). The order of attack above is the authorised one; do not relitigate
+it. Read `GROUND_TRUTH/byrnes_audit.md` instead -- it has the quotes.

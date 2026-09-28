@@ -16,8 +16,7 @@
     "Claims absent from this file are refereed on their ledger statement, with",
     "any leak recorded in the verdict as a noted bias."
   ],
-
   "C0012": "For all integers q >= r >= 0, f(q,r) <= q + r + 1. Consequently, for each fixed r the quantity f(q,r) - q is at most r + 1 for every q >= r.",
-
-  "C0021": "For every P-position (p,q,r) of 3-row Chomp with r >= 1, p - q <= 3r - 1. Equivalently, for each fixed r, f(q,r) - q is at most 3r - 1 for every q >= r."
+  "C0021": "For every P-position (p,q,r) of 3-row Chomp with r >= 1, p - q <= 3r - 1. Equivalently, for each fixed r, f(q,r) - q is at most 3r - 1 for every q >= r.",
+  "C0024": "Let f(q,r) be the unique p such that (p,q,r) is a P-position of 3-row Chomp, defined by the Brouwer recurrence. Define B_c(a)=f(c+a,c)-(c+a) (undefined where no loser [c,a,b] exists), u_c=N(c)-c, p_c=period of c (p_c:=1 for rows with finitely many P-positions), q_r=lcm{p_c : 0<=c<r}, m_r=1+max{B_c(a) : 0<=c<r, a>=0}, U_r=max{u_c:c<r}, t_r=max(U_r,r). Then for every r>=1: (i) m_r<=r+1; (ii) p_r<=q_r(m_r+1)^(m_r); (iii) u_r<=max(t_r,m_r)+q_r(m_r+1)^(m_r); (iv) q_{r+1}<=q_r^2(r+2)^(r+1). Hence N(r)<=r+max(t_r,m_r)+q_r(m_r+1)^(m_r) for rows with infinitely many P-positions, and N(r)<=r+1+max(t_r,m_r)+q_r(m_r+1)^(m_r) otherwise. Every quantity on the right is computed from the rows c<r alone, so this is an effective recursion for N(r)."
 }

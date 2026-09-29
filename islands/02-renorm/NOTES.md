@@ -161,3 +161,45 @@ below 130000); `max_q (f(q,r) - q) = (sqrt(2)/2) r + O(1)`.
 diagonal/mex experiments without touching GROUND_TRUTH.
 `GROUND_TRUTH/data/` holds the fetched papers (pypdf installed; extract with
 `pypdf.PdfReader(...).pages`).
+## Session S20260929T0957 findings (do not re-derive)
+
+### 1. Beatty-perturbation reformulation of the strip bound (C0025)
+A029902/A029901 (and the live rows) are BOUNDED PERTURBATIONS of the
+complementary Beatty pair (floor(a n), floor(b n)) with a=1+sqrt(2)/2,
+b=1+sqrt(2), 1/a+1/b=1:
+- r_n - floor(a n) in {-1,0,1} for ALL n <= 29289 (sup of |r_n - floor(an)| = 1).
+- p_n - floor(b n) in {-1,0,1,2}; live_n - floor(b n) in {-2..2} (99.97% in {-1,0,1}).
+Since |r_n - a n| <= |r_n - floor(a n)| + 1, the strip bound reduces to proving
+|r_n - floor(a n)| <= 1, a nearest-integer formulation. Max |r_n - a n| = 1.853
+exactly reproduces Brouwer's strip. This is a cleaner target than real-slope
+discrepancy: it is about an integer sequence staying within 1 of a Beatty floor.
+
+### 2. The cocycle is exponentially weak (C0026) -- Route A is dead at word level too
+Exhaustive enumeration of all 0-1 words satisfying the exact cocycle
+N(x)+N(floor(bx))=2x+e(x), e in {-1,0,1}: solution count grows exponentially
+(1288 / 11696 / 105550 / 1286320 / 11993136 at K = 12/16/20/24/28) and
+max|D| over ALL solutions grows (3.03 -> 4.60) while the true word has |D|<=0.9.
+So the self-similarity alone does not even narrow the word to a small class.
+The mex/greedy generation is the only selecting input (consistent with C0020).
+
+## Where this leaves the island
+Two new handles:
+- **Nearest-integer Beatty formulation (C0025):** prove r_n = floor(a n) + O(1)
+  with the O(1) actually ={-1,0,1}. This is a classic "bounded perturbation of a
+  Beatty sequence" statement and may be attackable by the known machinery for
+  Beatty sequences / Sturmian return words (note: the WORD is chaotic C0018, but
+  the perturbation of the VALUE sequence may still be tractable).
+- **Encode the greedy mex rule as prefix-sum constraints** and re-run the
+  backtracking (islands/02-renorm/scratch/cocycle_maxdisc.py). If the solution
+  set collapses under the mex constraint, that is evidence the greedy rule is
+  sufficient; if not, a new counterexample is found (kill test, cheap).
+
+The single best next step is the mex-constraint augmentation of the cocycle
+backtracking: test whether greedy-mex + cocycle forces |D| bounded. The mex rule
+for the stale rows is exactly the 3-row recurrence restricted to diagonal
+P-positions (f(q,q) = mex({f(a,q):a<q} u {f(q,b):b<q})); via C0017,
+A029902(n) = f(n,n)+O(1), so r_n is directly mex-generated.
+
+Scratch: islands/02-renorm/scratch/{structure.py, cocycle_exact.py,
+cocycle_maxdisc.py, cocycle_findmax.py, cocycle_heuristic.py,
+cocycle_search.py}; /tmp/t3000.txt = diagonal f(q,q), q<=3000.

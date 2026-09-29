@@ -2,83 +2,76 @@
 
 The target is a strip bound: prove `|A029902(n) - a n| <= K` for an explicit
 computable `K`, `a = 1 + sqrt(2)/2` (equivalently A029901 about `b n`,
-`b = 1 + sqrt(2)`). This discharges (B1) of `GROUND_TRUTH/byrnes_audit.md` and
-makes Byrnes effective. Numerics measured and saturating: `|A029902(n)-a n| <= 1.853`
-and `|A029901(n)-b n| <= 3.908` over all 29289 stale rows to r=50000 (Brouwer's
-strips match exactly).
+`b = 1 + sqrt(2)`), which discharges (B1) of `GROUND_TRUTH/byrnes_audit.md` and
+makes Byrnes effective. Numerics to r=50000: `|A029902(n)-a n| <= 1.853`,
+`|A029901(n)-b n| <= 3.908`, saturating; discrepancy
+`D(x)=#{A029902<=x}-x/a` measured in [-0.871, 1.085].
 
-This session sharpened the target and then stress-tested the main route:
-
-- **C0016**: strip bound ⟺ bounded discrepancy `D(x) = #{A029902<=x} - x/a`,
-  via `A029902(n) - a n = -a D(A029902(n))`; measured `D(x) in [-0.871, 1.085]`.
-- **C0015/C0019**: the discrepancy satisfies the exact integer cocycle
-  `D(x) + D(floor(bx)) in {-1,0,1}` (equiv `N(x)+N(floor(bx)) = 2x + {-1,0,1}`),
-  verified for every x with bx <= 50000.
-- **C0017**: `A029902(n) = f(n,n) + O(1)` (in {-3..1}), `A029901(n) = 2 A029902(n) - n + O(1)`
-  (in {-1..3}); `2a-1 = b` exactly.
-- **C0018**: the stale/live indicator word has maximal factor complexity (not
-  Sturmian, not low-complexity).
-- **C0014**: H&L Theorem 3.3 gives no error term; their Conjecture 5.1 is our
-  strip bound, open.
+Prior work established the exact cocycle `D(x)+D(floor(bx)) in {-1,0,1}`
+(C0015/C0019) but killed Route A (C0020): the cocycle alone does not force D
+bounded (explicit argument counterexample). C0017 gives bridges:
+`A029902(n)=f(n,n)+O(1)` and `A029901(n)=2 A029902(n)-n+O(1)`, `2a-1=b`.
 
 ## This session
 
-Read Hegarty-Larsson in full (C0014): Theorem 3.3 gives only asymptotic density,
-no error term; Conjecture 5.1 *is* the strip bound, stated open — so the Phase 0
-pointer does not pay out directly.
+1. Reconfirmed the exact-shift data and the diagonal bridge via a fresh
+   `table --rmax 3000` sweep (grid in /tmp/t3000.txt; `diag[q]=f(q,q)`).
 
-Computed the structure of A029901/A029902 from the census and a self-contained
-Python solver (scratch/diag_solver.py). Found the discrepancy reframing (C0016),
-the exact integer self-similarity (C0015, sharpened to the clean integer form in
-C0019), the diagonal bridge (C0017), and the negative result that the word is
-maximal-complexity (C0018).
+2. **C0025 (new, the key positive finding).** A029902 and A029901 — and the
+   live-row set — are BOUNDED PERTURBATIONS OF THE COMPLEMENTARY BEATTY PAIR:
+   `r_n - floor(a n) in {-1,0,1}` for every n <= 29289 (sup of the absolute
+   value is exactly 1 over the whole range), `p_n - floor(b n) in {-1,0,1,2}`,
+   `live_n - floor(b n) in {-2..2}` (99.97% in {-1,0,1}). Since
+   `|r_n - a n| <= |r_n - floor(a n)| + 1`, the strip bound reduces to the
+   nearest-integer statement `|r_n - floor(a n)| <= 1`. This matches Brouwer's
+   measured strip max 1.853 exactly and is a far cleaner target than real-slope
+   discrepancy. The strip bound is now a statement about an integer sequence
+   staying within 1 of a Beatty floor.
 
-**Then ran the kill test I flagged in the previous handoff** (the most important
-thing this session): does the self-similarity alone force D bounded? **No**
-(C0020). The cocycle `D(x)+D(bx) in {-1,0,1}` is satisfied by the explicit
-unbounded function `D(x)=(-1)^k k`, `k=floor(log_b x)`. So the self-similarity is
-a *consequence* of the mex structure, not a sufficient condition. Route A as
-stated is dead; the mex structure must be used.
+3. **C0026 (new negative result).** Exhaustive enumeration (backtracking with
+   prefix-sum constraint propagation, see scratch/cocycle_maxdisc.py) of ALL
+   0-1 words satisfying the exact integer cocycle: the number of solutions
+   grows exponentially (1288 at K=12, 11696 at K=16, 105550 at K=20, 1286320
+   at K=24, 11993136 at K=28), and the maximum discrepancy over all solutions
+   GROWS (3.03 -> 4.60) while the true stale word has |D| <= 0.9 there. So the
+   self-similarity is exponentially weak even at the word level: it does not
+   even narrow the word to a small class. The mex/greedy generation of
+   A029901/A029902 is the ONLY input that selects the realized word.
 
 ## Claims logged
 
-- C0014: H&L Theorem 3.3 gives no error term; their Conjecture 5.1 is our strip bound, open.
-- C0015: exact self-similarity `D(x)+D(bx) in {-1,0,1}`.
-- C0016: strip bound ⟺ bounded discrepancy, via `A902(n)-a n = -a D(A902(n))`.
-- C0017: `A902(n)=f(n,n)+O(1)`, `A901(n)=2 A902(n)-n+O(1)`, `2a-1=b`.
-- C0018: indicator word has maximal factor complexity (not Sturmian).
-- C0019: exact integer cocycle `N(x)+N(floor(bx))=2x+{-1,0,1}`; alternating-sum formal solution.
-- C0020: NEGATIVE — the cocycle alone does not force D bounded (explicit counterexample).
+- C0025: A029902/A029901 (and live rows) are bounded perturbations of the
+  complementary Beatty pair (floor(a n), floor(b n)); r_n - floor(a n) in
+  {-1,0,1} for all n <= 29289; strip bound reduces to |r_n - floor(a n)| <= 1.
+- C0026: the exact cocycle admits exponentially many 0-1 words with unboundedly
+  growing max discrepancy; self-similarity alone cannot force the strip bound.
 
 ## Next step
 
-Pursue **Route B (the diagonal bridge, C0017)** or augment the cocycle with the
-mex structure. Two concrete options:
-
-1. **(Augmented cocycle.)** The full functional description is
-   `D(x) - D(x-1) = [x in A902] - 1/a` together with the greedy mex generation
-   of A902 (which is exactly the 3-row recurrence restricted to diagonal
-   P-positions). The counterexample in C0020 violates the jump condition
-   (its jumps are not 0/1-valued in the right pattern). Test whether
-   jump-condition + cocycle + `e in {-1,0,1}` forces D bounded; if a
-   counterexample still exists, the mex *generation* (not just the jump pattern)
-   is the essential input.
-2. **(Diagonal strip via recurrence.)** `A902(n) = f(n,n) + O(1)` (C0017) means
-   the strip bound is equivalent to a strip bound on the diagonal `f(q,q) ~ a q`.
-   Byrnes' Lemma 5 gives the linear bound `f(r,r) <= 4r-1`; the recurrence
-   `f(q,q) = mex({f(a,q):a<q} u {f(q,b):b<q})` is a self-map that may be
-   contractive in the strip metric. Attack that directly.
-
-Option 2 is the most likely to produce a constant and is closest to Island 01's
-proved Lemma 5 territory; option 1 is the more faithful renormalization route.
-Do whichever yields a *constant* first.
+Augment the cocycle backtracking (`islands/02-renorm/scratch/cocycle_maxdisc.py`)
+with the mex constraint so the search space excludes the exponentially many
+spurious words: either (a) encode the diagonal mex recurrence
+`f(q,q)=mex({f(a,q):a<q} u {f(q,b):b<q})` directly (compute f(q,q) to q~3000
+from /tmp/t3000.txt and add prefix-sum constraints linking r_n = f(n,n)+O(1)),
+or (b) encode the nearest-integer Beatty constraint from C0025
+(`|r_n - floor(a n)| <= 1`, i.e. r_n must stay within 1 of the Beatty floor) as
+additional hard constraints and re-enumerate. Result: if the solution set
+collapses to O(1) words with bounded D, the greedy/Beatty-nearness is the
+essential input and a proof route exists; if a spurious word still survives
+with unbounded D, we have a new counterexample to log. Either outcome is a real,
+cheap result. Alternatively, attack C0025's nearest-integer statement directly:
+prove r_n = floor(a n) + O(1) using Beatty-sequence machinery (the word is
+chaotic per C0018, but that does not preclude value-level Beatty nearness).
 
 ## Confidence
 
-Alive, and one dead end is now cleanly identified (the self-similarity alone is
-insufficient — this is real progress, not just a negative: it tells us the mex
-structure is the essential input, not a decorative consequence). The target is
-bounded discrepancy of one set, with the mex generation of A902 as the
-constraint. What would kill the thesis: if the augmented cocycle (jump condition
-+ self-similarity) also admits an unbounded counterexample, then the full mex
-generation is needed and we should go straight to Route B's diagonal recurrence.
+Alive and better focused. Two new structural facts: a clean nearest-integer
+Beatty reformulation (C0025) and a decisive negative showing the cocycle alone
+is exponentially weak (C0026). What would kill the thesis: if the mex
+constraint, added to the cocycle backtracking, still leaves spurious words with
+unbounded discrepancy — that would mean even the full structural description
+(greedy + self-similarity) fails to force the strip bound, and the remaining
+hopes are a direct Beatty-nearness proof or Route B (diagonal recurrence
+contraction). Also note isomorphism with classical results: bounded
+perturbations of Beatty sequences have a literature (complementary Beatty
+theorems, Fraenkel); novelty check is deferred to the referee.

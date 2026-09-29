@@ -1,0 +1,17 @@
+{
+  "session": "S20260929T0957",
+  "island": "02-renorm",
+  "turns": 46,
+  "output_tokens": 134710,
+  "minutes": 68.4,
+  "cost": 1.5454,
+  "total_spent": 8.8293,
+  "remaining": 21.1707,
+  "handoff_written": true,
+  "claims_appended": [
+    "C0025",
+    "C0026"
+  ],
+  "stopped_on": "spend",
+  "complete": true
+}

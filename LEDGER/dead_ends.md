@@ -33,3 +33,13 @@ instant-winner sequence W_r, so the displayed form is not a valid bound (C0023).
 omitted the phase `a mod q_r` needed to make the state transition deterministic.
 **Revisit if:** not needed as-is -- C0024 is the correct recursion. A closed form still
 requires (Z2) (an a priori lcm bound); C0024 supplies the recursion, not the closure.
+
+### 2026-09-29 -- Word-level cocycle enumeration shows the self-similarity is exponentially weak
+**Tried:** Enumerate ALL 0-1 words satisfying the exact integer cocycle N(x)+N(floor(bx))=2x+e(x), e in {-1,0,1} (C0019), to see if it pins down the stale word or at least forces |D| bounded.
+**Failed because:** The cocycle admits exponentially many solutions (1288 at K=12 growing to ~12M at K=28), and the max |D| over all solutions grows with K (3.03 -> 4.60), while the true word has |D| <= 0.9. So the self-similarity does not even narrow the word to a small class, let alone force bounded discrepancy (C0026). The mex/greedy generation of A029901/A029902 is the only input that selects the realized word.
+**Revisit if:** someone can encode the greedy mex rule as a constraint on prefix sums that can be added to this backtracking (then measure whether the solution set collapses to O(1) words with bounded D).
+
+### 2026-09-29 -- Random/animated local search cannot find better cocycle words
+**Tried:** Simulated-annealing / random-flip search over 0-1 words to find the max-discrepancy cocycle-compatible word at larger K (32..56).
+**Failed because:** The search landscape is too rugged; best |D| found (3.75..4.12) is below the exhaustive result at K=28 already (4.60). Not a useful estimator of the true supremum.
+**Revisit if:** a better repair operator (block moves) or LP/SAT encoding of the cocycle with a discrepancy objective.

@@ -6,49 +6,48 @@
   "restated": "For every P-position (p,q,r) of 3-row Chomp with r >= 1, p - q <= 3r - 1. Equivalently, for each fixed r, f(q,r) - q is at most 3r - 1 for every q >= r.",
   "ledger_statement": "CORRECTION of C0009 and (Z1). Byrnes' Lemma 5, correctly specialised to 3-row Chomp with the third row fixed, gives p - q <= 3r - 1 for EVERY P-position (p,q,r), uniformly in q. The embedding forced by Byrnes' assumption (1) is C = the row-2 tail, D = the row-1 tail, A = the 3r-1 cells of columns 1..r minus the poison, giving m = q-r and n = p-r. C0009 used n = p-q, which yields the weaker true statement (p-q)-(q-r) <= 3r-1 and a spurious (q-r) term that appears to grow with q. Consequence: (Z1) is NOT half-proved, it is fully proved in print with C = 3, and M_r <= 3r-2. The 'residual half of (Z1)' that the Phase 0 audit set as island 01's opening target does not exist.",
   "submission_leaks": [],
-  "escape_attempts_blocked": 4,
-  "spend": 0.2727,
+  "escape_attempts_blocked": 2,
+  "spend": 0.5915,
   "verdicts": [
     {
-      "disposition": "accept",
+      "disposition": "reject",
       "first_gap_line": null,
-      "gap_description": "None found. After the coordinate correction (n = p - r, m = q - r), Byrnes' Lemma 5 applies verbatim with k = 0 to the embedded position (r+n, r+min(m,n), r) = (p,q,r), giving p - q = n - m <= |A| = 3r - 1.",
+      "gap_description": "No logical gap in the specialization: the embedding A = columns 1..r minus the poison, C = row-2 tail, D = row-1 tail satisfies Byrnes' setting (no c <= d), and A_{m,n} with m=q-r, n=p-r equals (p,q,r); Byrnes' Lemma 5 with k=0 then gives p-q = n-m <= |A| = 3r-1. Rejection is on novelty/relevance: the submission itself states it is 'Byrnes' Lemma 5 specialised ... not a new argument', so the claimed bound is already in print as a direct specialisation of Byrnes' published Lemma 5, and it does not produce the project's target, a computable bound on N(r).",
       "counterexample_search": {
-        "range_checked": "Exhaustive solver check of all P-positions with r <= 2000; live-row periodic tails checked to r <= 50000 via a recomputed census; boundary samples at r = 50000; independent Grundy check for r <= 6, q <= 14, p <= 14.",
+        "range_checked": "Solver direct rows r<=1200 to full column finalisation; selected r in {1500,2000,3000,5000,8000,12000,20000} through qend; census dvals for every live row r<=50000",
         "result": "no counterexample",
         "counterexample": null
       },
       "novelty": {
         "searched": [
-          "arxiv.org search 'poset game periodicity Byrnes' (network refused by harness)",
-          "the submission's binding to Byrnes' Lemma 5: the linear bound is a corollary of the cited 2003 lemma, not genuinely new"
+          "local search for 'Byrnes','Lemma 5' in project files",
+          "network search attempted but refused by sandbox"
         ],
-        "result": "inconclusive",
-        "reference": null
+        "result": "already known",
+        "reference": "Byrnes (2003), Poset-Game Periodicity, Lemma 5, quoted by the submission itself as [C0009]; the claimed p-q <= 3r-1 is its direct specialisation"
       },
-      "effectivity_check": "The proof produces an explicit computable bound, quoted: \"n - m = (p - r) - (q - r) = p - q <= |A| = 3r - 1.\" It does not by itself bound the preperiod N(r); it only bounds the P-position offset p - q.",
+      "effectivity_check": "For the stated growth claim the proof does produce an explicit computable constant: 'p - q <= |A| = 3r - 1'. However, it does NOT produce any computable bound on N(r) (preperiod onset); the claimed result bounds p-q only and is not an N(r) bound.",
       "confidence": "high",
       "_temperature": 0.3
     },
     {
-      "disposition": "reject",
-      "first_gap_line": "What remains of (Z1) is only that max_q (f(q,r)-q) is attained near q=r: observed to exceed f(r,r)-r by at most 2 over all r <= 2000.",
-      "gap_description": "The proof proves at most the value bound f(q,r)-q <= 3r-1 (a restatement of the cited Byrnes Lemma 5), but the project's target is a computable bound on N(r); the load-bearing step linking the value bound to a preperiod bound is left as an empirical observation over r <= 2000, not proved. A bounded range of values does not by itself yield any computable N(r).",
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": null,
       "counterexample_search": {
-        "range_checked": "census r <= 50000 (20712 live rows, periodic d-values); direct row scans r <= 1000 with q up to 3r+50; spot checks r = 5000, 20000; boundary r = 0",
+        "range_checked": "Full grid r <= 4000, q <= 4500 via validated solver (no violation); row r = 5000, q <= 35000 (max d = 3536, bound 14999); targeted rows r in {1,2,3,6,120,200,2000,5000}.",
         "result": "no counterexample",
         "counterexample": null
       },
       "novelty": {
         "searched": [
-          "arxiv.org/abs/math/0301230 (retrieved: different paper, BP-cohomology)",
-          "arXiv export API query 'Poset-Game Periodicity' (HTTP 406, blocked)",
-          "local files for Byrnes paper (not present)"
+          "arXiv search: Byrnes poset game periodicity",
+          "Google: Byrnes \"Poset Game Periodicity\""
         ],
-        "result": "already known",
-        "reference": "Byrnes, Poset-Game Periodicity, Lemma 5 (the submission itself states the bound is 'already in print')"
+        "result": "inconclusive",
+        "reference": null
       },
-      "effectivity_check": "No line yields a computable bound on N(r). The only explicit constant produced is 3 in 'n-m <= |A| = 3r-1', which bounds the value of f(q,r)-q, not the onset of eventual periodicity. The step converting this to an N(r) bound is absent and is deferred as an unproved numerical observation.",
+      "effectivity_check": "The proof produces an explicit computable bound on the values f(q,r)-q: the constant 3 appears in the line 'n - m = (p - r) - (q - r) = p - q <= |A| = 3r - 1'. It does NOT produce a bound on the periodicity onset N(r); no such line exists, but that is not the submitted claim C0021.",
       "confidence": "medium",
       "_temperature": 0.8
     }

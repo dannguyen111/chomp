@@ -85,17 +85,44 @@ to a closed form is exactly (Z2), still open. The state-machinery subtlety:
 the state must carry the phase `a mod q_r` (otherwise `W_r(a+1)` is not
 determined by the state); the count `q_r(M+1)^M` is unchanged by this.
 
-## What is actually left (updated)
+## (Z2) IS NOW CLOSED TOO (session S20260930T0949): C0027
 
-1. **(Z2).** An a priori bound on `lcm{period(c) : c < r}` is the only gap
-   between C0024's recursion and a closed form. Observed lcm to r=50000 is 72.
-   Periods observed: {1,2,3,4,6,8,9}.
-2. **(B1)**, a computable `K(r)` bounding the last `q` at which a stale row
-   carries a P-position. Still open for Byrnes' proof specifically. C0024
-   bounds it (`q-r <= max(t_r,m_r)+q_r(m_r+1)^{m_r}`) but only through the
-   Zeilberger route.
-3. **Referee C0024.** The proof is written and numeric checks scripted, but it
-   has not been through the referee gate.
+The previous session's handoff said "(Z2) remains open". It does not: **C0024's
+part (iv) is itself an a priori bound on `q_r`**. Because `q_1 = 1` and (iv)
+plus the prior-art `m_r <= r+1` never consults the actual periods, the recursion
+unrolls to a closed form:
+
+> `g(1)=1, g(r+1)=g(r)^2 (r+2)^(r+1)`  =>  `q_r <= g(r)`  (Lemma A; this IS (Z2)).
+> `h(r)=11+r+sum_{k=2}^r g(k)(k+2)^(k+1)`  =>  `u_r=N(r)-r <= h(r)`  (Lemma B).
+> Hence `N(r) <= r + h(r)` for ALL rows, live and stale.
+
+`g(r)=2^{Theta(2^r)}`, so `N(r) <= 2^{2^{O(r)}}`: a double-exponential but fully
+explicit computable bound — a genuine closed form, with no quantity on the right
+defined by a recursion over the actual rows. **The MISSION target (section 4) is
+met.** Proof in `proofs/C0027.md`; verification in `scratch/verify_closed_form.py`
+(exact big-int r<=12, log-space r<=60). Sharpening to `C·r` remains open and is a
+different question (equivalent to bounded discrepancy of A029902, C0016).
+
+## C0028 sharpens C0027 (same session): lcm recursion is LINEAR
+
+C0027's `q_{r+1} <= q_r^2 (r+2)^{r+1}` lost a factor `q_r` unnecessarily. The
+pigeonhole's repeated state carries the phase `a mod q_r`, so the repeated-period
+`s` satisfies `q_r | s` AND `p_r | s`, hence `q_{r+1} = lcm(q_r, p_r) | s <=
+q_r(m_r+1)^{m_r}` **directly** — no need to multiply (ii)'s `p_r` bound by `q_r`.
+This gives `g(r+1)=g(r)(r+2)^{r+1}` and `N(r) <= 2^{O(r^2 log r)}` instead of
+`2^{2^{O(r)}}`. Proof in `proofs/C0028.md`; verified exact r<=12, log-space r<=60.
+**C0027 is superseded for the bound's exponent by C0028** (the linear lcm recursion
+is the correct one); C0027 remains correct as a bound, just weaker.
+
+## What is actually left (final for this session)
+
+1. **Referee C0024 and C0028** (and C0027 if desired). All `lemma` + proof,
+   refereeable; C0027 and C0028 have restatements in `LEDGER/restatements.json`.
+2. **(Z2) is closed** by C0027/C0028 (now `2^{O(r^2 log r)}`). Only *sharpening*
+   remains: `N(r) <= C·r` for explicit `C` (MISSION's "full success"), which is
+   the discrepancy question C0016/C0025, not a finite-state pigeonhole.
+3. **(B1)**, a computable `K(r)` for the last stale P-position, still open for
+   Byrnes' proof specifically; C0024/C0028 bound it only via the Zeilberger route.
 
 ## Facts about `f` you can use without recomputing
 

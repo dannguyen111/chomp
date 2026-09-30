@@ -1,0 +1,17 @@
+{
+  "session": "S20260930T0949",
+  "island": "01-recurrence",
+  "turns": 77,
+  "output_tokens": 201856,
+  "minutes": 54.2,
+  "cost": 1.5446,
+  "total_spent": 10.9654,
+  "remaining": 19.0346,
+  "handoff_written": true,
+  "claims_appended": [
+    "C0027",
+    "C0028"
+  ],
+  "stopped_on": "spend",
+  "complete": true
+}

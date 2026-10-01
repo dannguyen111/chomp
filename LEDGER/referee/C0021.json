@@ -1,0 +1,61 @@
+{
+  "claim": "C0021",
+  "agreed": true,
+  "final": "reject",
+  "sandboxed": true,
+  "restated": "For every P-position (p,q,r) of 3-row Chomp with r >= 1, p - q <= 3r - 1. Equivalently, for each fixed r, f(q,r) - q is at most 3r - 1 for every q >= r.",
+  "ledger_statement": "CORRECTION of C0009 and (Z1). Byrnes' Lemma 5, correctly specialised to 3-row Chomp with the third row fixed, gives p - q <= 3r - 1 for EVERY P-position (p,q,r), uniformly in q. The embedding forced by Byrnes' assumption (1) is C = the row-2 tail, D = the row-1 tail, A = the 3r-1 cells of columns 1..r minus the poison, giving m = q-r and n = p-r. C0009 used n = p-q, which yields the weaker true statement (p-q)-(q-r) <= 3r-1 and a spurious (q-r) term that appears to grow with q. Consequence: (Z1) is NOT half-proved, it is fully proved in print with C = 3, and M_r <= 3r-2. The 'residual half of (Z1)' that the Phase 0 audit set as island 01's opening target does not exist.",
+  "submission_leaks": [],
+  "escape_attempts_blocked": 5,
+  "spend": 0.3318,
+  "verdicts": [
+    {
+      "disposition": "reject",
+      "first_gap_line": "The outcome A_{m,n} = ( row1 = r+n, row2 = r+min(m,n), row3 = r ), that is, taking n >= m so that p >= q, m = q - r and n = p - r.",
+      "gap_description": "After removing {x : x >= d_{n+1}} with d_{n+1} = (1, r+n+1) under the componentwise order, row 2 is truncated to min(r+m, r+n) only in the inequality-coordinate sense; Chomp's upper set of (1, r+n+1) in this 3-row board must also delete (3, j) for every j >= r+n+1. So the row-3 length of A_{m,n} is r only when r <= r+n, which requires n >= 0, and the claimed exact identification with (p,q,r) is not established. Consequently the assertion that every P-position (p,q,r) is some A_{m,n} with m = q-r and n = p-r is unproven: there is no specialization, only the weaker conditional bound (p-q)-(q-r) <= 3r-1 at the diagonal q=r.",
+      "counterexample_search": {
+        "range_checked": "r <= 50000 (census_50000.tsv tails, qmax=1.8r+600); independently all q >= r with q <= 2500 and r <= 500 (8.5M cells), and r=2000 with q <= 6000",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "arXiv API: author:Byrnes AND all:poset",
+          "arXiv API: all:\"poset game periodicity\"",
+          "arXiv API: all:Chomp AND all:periodicity",
+          "arXiv web search: Byrnes poset-game periodicity",
+          "CrossRef: poset game periodicity",
+          "Semantic Scholar search (rate-limited 429)"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "No effective new constant is produced. The proof does not attempt to bound N(r) or the period, and the only bound obtained at the valid specialization is f(r,r) <= 4r-1, with the claimed y=3r-1 uniform-in-q bound dependent on a coordinate identification that fails.",
+      "confidence": "high",
+      "_temperature": 0.3
+    },
+    {
+      "disposition": "reject",
+      "first_gap_line": "reading `n` as `p - q` instead of `p - r` yields `(p-q) - (q-r) <= 3r - 1` ... but it is not what Lemma 5 gives ... Under the correct coordinate there is nothing left to prove.",
+      "gap_description": "Byrnes' setup has A, C, D pairwise disjoint in X, so truncation at c_{m+1} and d_{n+1} can only remove outright the elements of the two tails C and D chosen for n and m; the remaining chain elements c_1..c_m and d_1..d_n are are NOT cells of Chomp positions, differing from the claimed surrogates c_j=(2,r+j), d_j=(1,r+j). For the claimed surrogates the row-2 tail is not a chain under the componentwise order (incomparability and non-transitivity), and deleting {x >= d_{n+1}} necessarily removes (2,r+1..r+n) as well, producing (r+n, r+min(m,n), r), so the generic Byrnes position A_{m,n} is not the Chomp position (p,q,r). In the only genuinely-by-Byrnes embedding (Byrnes' one-chain Corollary 4 with the second row as the chain and the first and third rows fixed in A, D adjoined), the coordinates force n=p-q, m=q-r, and Lemma 5's unconditional clause delivers only (p-q)-(q-r) = f(q,r)-2q+r <= 3r-1; for q>r the appended negative coefficient -2q is not valid for the quantity f(q,r)-q that the claim seeks to bound. Since the claim's bound is entirely unsupported, the proof has a fatal logical gap regardless of the unlimited numerical agreement.",
+      "counterexample_search": {
+        "range_checked": "all P-positions q,r <= 2000 via solver; every transient row q <= N(r) for representative r=1,500,1000,2000,5000,10000,2500,7500,15000; eventual-period dvals for all r <= 50000 from precomputed census; plus all dvals (including transients) up to q=50000 for r=10000",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "arXiv API: ti:Chomp; all:poset AND all:periodicity; all:poset-game periodicity; author:Byrnes",
+          "Crossref: 'Byrnes poset game periodicity', 'periodic P-positions Chomp'",
+          "OpenAlex: 'poset game periodicity Byrnes', 'Chomp game P-positions periodicity Byrnes', 'three row Chomp losing positions'",
+          "downloaded and read Byrnes 2003 (siemens.pdf): p.8 Lemma 5, Section 3 setup, Corollary 4"
+        ],
+        "result": "novel",
+        "reference": null
+      },
+      "effectivity_check": "The proof reasserts a known bound that does not apply, and produces no computable bound N(r), so it does not even engage the project's effectivity goal.",
+      "confidence": "high",
+      "_temperature": 0.8
+    }
+  ]
+}

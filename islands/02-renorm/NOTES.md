@@ -161,6 +161,7 @@ below 130000); `max_q (f(q,r) - q) = (sqrt(2)/2) r + O(1)`.
 diagonal/mex experiments without touching GROUND_TRUTH.
 `GROUND_TRUTH/data/` holds the fetched papers (pypdf installed; extract with
 `pypdf.PdfReader(...).pages`).
+
 ## Session S20260929T0957 findings (do not re-derive)
 
 ### 1. Beatty-perturbation reformulation of the strip bound (C0025)
@@ -203,3 +204,58 @@ A029902(n) = f(n,n)+O(1), so r_n is directly mex-generated.
 Scratch: islands/02-renorm/scratch/{structure.py, cocycle_exact.py,
 cocycle_maxdisc.py, cocycle_findmax.py, cocycle_heuristic.py,
 cocycle_search.py}; /tmp/t3000.txt = diagonal f(q,q), q<=3000.
+
+## Session S20261001T1016 findings (do not re-derive)
+
+### 1. (B1) IS CLOSED by published prior art: N(r) <= 3r for stale rows (C0029)
+The single gap (B1) in `byrnes_audit.md` -- an explicit K(r) bounding the last
+P-position of a stale row -- is closed by **BHMS §8.8**, which proves
+`q_n <= 3n-1` for the constant-row values `q_n = A029901(n)`. Chain:
+`N(r_n) = q_n + 1 <= 3n <= 3 r_n` (using `r_n >= n`). So `N(r) <= 3r` for all
+29289 stale rows, equality only at r=1. This is PROVED, not conjectural: the
+ingredient is in print. The audit's own section 3 lists `3r` as acceptable but
+did not notice BHMS already supplies `q_n <= 3n-1`. Proof:
+`islands/02-renorm/proofs/C0029.md`.
+
+### 2. Numerically N(r) <= 3r for ALL rows, N(r) <= 2r for r >= 2 (C0030)
+Over all 50001 rows to r=50000: N(r) <= 3r with equality only at r=1 (N=3);
+N(r) <= 2r for all r >= 2. Stale rows: proved (C0029). Live rows (20712):
+observed, max N/r = 1.7273 at r=11. A uniform closed-form bound N(r) <= 3r is
+now proved for ~59% of rows and conjectural/observed for the rest.
+
+### 3. A029900 and A029901 are exactly complementary (C0031, prior art Sheiner Prop 4.4)
+The diagonal `d_n = f(n,n)` (A029900) and the constant-row values `q_n`
+(A029901) are disjoint and together cover all positive integers except 1 (the
+poison). Verified to n=3000: complement of {d_1..d_3000} in [1, d_3000] equals
+A029901 terms <= d_3000 exactly (0 overlap, 0 gaps). This is the algebraic
+backbone: the diagonal is mex-generated, A029901 is its complement, and the
+strip bound on A029902 (r_n) is equivalent to a strip bound on the
+mex-generated diagonal.
+
+### 4. Dead ends this session
+(a) The diagonal discrepancy `D_d(x)=#{d_n<=x}-x/a` has NO clean self-similarity
+cocycle (measured drift [-2.77,-0.42], not {-1,0,1}); the cocycle C0015 is a
+property of the STALE SET A029902, not the raw diagonal.
+(b) The "overlap identity" `d_n = 2n+1-overlap_n` for the diagonal mex is false
+(fails at n=52); the mex is genuinely 2-dimensional and the dip structure
+(d_n-d_{n-1}=-1 at 43 places <=3000) breaks the naive count.
+
+## Where this leaves the island (updated)
+
+The renormalisation/strip-bound target remains open for the *sharp* constant
+(`N(r) ~ sqrt(2) r`), but the *effectivity* target (any computable K(r)) is now
+**closed for stale rows** by C0029, and numerically supported for all rows by
+C0030. The remaining gaps for a complete closed-form bound on ALL rows are:
+- **(live rows):** prove N(r) <= 3r (or any linear bound) for live rows. The
+  Zeilberger route needs (Z1) [closed: C0021 gives p-q <= 3r-1] and (Z2)
+  [lcm of periods below r, still open]. Alternatively a direct argument for
+  live rows analogous to BHMS §8.8.
+- **(Z2):** bound lcm{period(c) : c < r}. Observed periods {1,2,3,4,6,8,9},
+  lcm 72, to r=50000. A bound like lcm <= 2^{O(r)} or even a polynomial would
+  give a complete effective Byrnes.
+
+The sharp strip bound |A029902(n)-a n| <= K remains the "renormalisation"
+prize and is still open; C0029 shows it is NOT needed for effectivity (a cruder
+3r bound already closes B1). The island should now weigh: (i) close live rows
+by a direct argument (cheap, completes the closed form), vs (ii) continue the
+renormalisation route for the sharp constant (harder, the original charter).

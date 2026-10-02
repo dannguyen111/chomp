@@ -1,3 +1,40 @@
+> # CORRECTIONS — read before trusting anything below (2026-10-01)
+>
+> This handoff is from session 1 (2026-09-20). Three of its central claims have
+> since been overturned. The text is kept intact because the reasoning is still
+> useful, but **do not act on it without these corrections.**
+>
+> **1. C0012 is PRIOR ART, not a result of this session.** `f(q,r) <= q+r+1` is
+> stated verbatim in Brouwer–Horváth–Molnár-Sáska–Szabó, *On Three-Rowed Chomp*,
+> INTEGERS 5 (2005) **#G07 section 8.1**, one line after the recurrence. The
+> proof below is correct and more explicit than the source, but the result is not
+> ours. **(Z1) was discharged in 2005.** #G07 was simply never in
+> `fetch_sources.py`; it is now. See the PRIOR ART block in `proofs/C0012.md`.
+>
+> **2. "The target is achieved" is wrong, because C0013's closed form is wrong.**
+> Per C0023(c), the Zeilberger state count **omits the preperiod `a_0(r)`**. The
+> correct form is `N(r) + period(r) <= a_0(r) + p_r (M_r+1)^(M_r)`, which is a
+> **recursion over r**, not a closed form. The displayed
+> `N(r) <= 2^(2^r · poly(r))` does not follow until that recursion is unrolled.
+> That is open work, not a finished result.
+>
+> **3. The paragraph below about `n = p-q` versus `n = p-r` is right, and it was
+> the single most expensive error in the project.** C0009 used `n = p-q`; Byrnes'
+> assumption (1) forces `n = p-r`. The slip produced a *true but weaker*
+> statement, so every numerical check passed while the claim around it was false,
+> and it survived three of my own reviews. C0009 and C0010 are superseded by
+> C0021 and C0022. Read the ERRATA at the top of `GROUND_TRUTH/byrnes_audit.md`.
+>
+> **What is actually the best candidate contribution now:** not C0012, but
+> **C0011**. #G07 section 8.12 says proving `d_n, r_n ~ αn` and `q_n ~ βn`
+> suffices for opening-move uniqueness; Sheiner (arXiv:2605.23837, 2026) proved
+> uniqueness by another route and explicitly does *not* establish those
+> asymptotics, so they remain open — and C0011's saturation is strictly stronger
+> than them.
+>
+> Full operations state, including the autonomous cron loop and the referee's
+> fabricated-citation failure, is in `OPERATOR_NOTES.md` section 0.
+
 ## State
 
 The MISSION target (an explicit computable bound on N(r)) is met **in closed form**. The

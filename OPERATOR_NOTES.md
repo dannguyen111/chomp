@@ -6,11 +6,183 @@ with no memory of the last one. The *science* lives in `LEDGER/`,
 what has been run, what broke, what to run next, and the conventions that were
 learned the expensive way.
 
-Last updated: 2026-09-21, after session 2 and the Opus pre-screen.
+Last updated: **2026-10-01**. Sections 0 and the dated sections at the end are
+current. **Sections 1 and 2 are stale** -- see the note on them.
+
+---
+
+## 0. READ THIS FIRST
+
+### Before anything else: this file is behind the repo
+
+Everything below was verified locally on **2026-09-27**. Autopilot went on that
+day, so by the time you read this the crons have been running unattended and
+**the remote has commits this file knows nothing about.** First two commands:
+
+```
+git pull
+python3 ops/digest.py --since '10 days ago'
+```
+
+Do not report any status from this file as current without doing that. The
+whole recurring failure of this project has been asserting things that were not
+checked; do not let the handoff be the next instance.
+
+### The loop is autonomous as of 2026-09-27
+
+| when (UTC) | what | cap | where |
+|---|---|---|---|
+| 03:17 | `session.yml` -- one explorer session, islands alternate | $1.50 | Actions |
+| 09:17 | `referee.yml` -- auto mode, 1 claim | $0.75 | Actions |
+| 13:00 | daily digest emailed to sidan.nguyen@gmail.com | free | Claude routine |
+
+- **Off switch:** delete `runs/AUTOPILOT` and push. One file, both workflows,
+  effective next cron. Manual `workflow_dispatch` ignores it.
+- `:17` not `:00` deliberately -- GitHub's scheduler queues hardest on the hour.
+- Both workflows share the `chomp` concurrency group, so a long session queues
+  the referee instead of racing it on the ledger.
+- Scheduled runs pin their own caps; **manual dispatch uses the old $5.00/$1.00
+  defaults.** The gate branches on `github.event_name == 'schedule'`. If you ever
+  drive these from an external cron (cron-job.org etc.) you will silently get the
+  manual caps and bypass `runs/AUTOPILOT` -- pass `inputs` explicitly.
+- Digest routine: `trig_01P8MeN3FDkBPRfW1xcHq6Wk`. It runs `ops/digest.py` and
+  follows `ops/DIGEST_PROMPT.md`; both are in the repo so they can be fixed
+  without touching the routine.
+- Budget was **$5.2492 of $30** at 2026-09-27T21:14Z, burning ~$1.72/day, so it
+  should exhaust around **2026-10-11**. Each workflow refuses to start below its
+  own cap, so the loop stops cleanly rather than dying mid-proof.
+
+### The single most important fact
+
+**C0012 is `proven` AND it is prior art.** `f(q,r) <= q+r+1` is stated verbatim
+in Brouwer-Horvath-Molnar-Saska-Szabo, *On Three-Rowed Chomp*, INTEGERS 5 (2005)
+**#G07 section 8.1**, one line after the recurrence it introduces. Therefore
+**(Z1) was discharged in 2005** and the project's first proven claim is a
+restatement.
+
+Root cause: #G07 was never in `fetch_sources.py`. The project vendored Byrnes,
+Zeilberger, Hegarty-Larsson and Brouwer's *webpage* -- which does not state the
+bound -- but not the paper the recurrence comes from. Both #G07 and Sheiner are
+in the source list now. **Read them before claiming anything about `f(q,r)`.**
+
+Nothing found a false statement here: the solver, the proof and all four
+adversarial passes were right. *Novelty* failed, and `novelty_checked` sat at
+`false` on a claim already marked `proven`. The gate never looks at that field.
+
+### Novelty status
+
+Checked: **C0003, C0006, C0011, C0012, C0017**. Roughly **16 unchecked**, all
+`evidence`. C0013, C0022 still need Sheiner read against them.
+
+- **C0011 is the best candidate contribution.** #G07 section 8.12 says proving
+  `d_n, r_n ~ alpha n` and `q_n ~ beta n` suffices for opening-move uniqueness.
+  Sheiner (2026) proved uniqueness by a *different* route and explicitly does
+  not establish those asymptotics, so **they are still open**, and C0011's
+  saturation is strictly stronger than them. Proving it closes 8.12's second
+  half.
+- **#G07 section 8.2 is WRONG.** It claims period 25 at r=782 and period 720 at
+  r=7751. Both are below r=10000 where Nivasch's census (which Brouwer endorses
+  on his own page) finds only periods 2,3,4,9 and lists neither row. Our solver:
+  r=782 is live with period 1, r=7751 is stale. Pinned by
+  `test_nivasch.py::test_fg7_period_claim_is_wrong`. **26 tests pass.**
+- Attribution: `alpha = 1 + 1/sqrt(2)` and `beta = 1 + sqrt(2)` are in #G07
+  (2005), two years before Friedman-Landsberg. "The Friedman-Landsberg strips"
+  credits the wrong paper for the constants.
+
+### The referee gate: fixed, but not trustworthy
+
+Runs 6 and 7 **could not reach a verdict at all.** The sandbox refused the
+referee permission to write a verification script, so it argued from unchecked
+premises and rejected C0021 twice at *high* confidence on two different wrong
+objections (run 6: claimed `(3r-1)+m+n != p+q+r-1`, which are identically equal;
+run 7: claimed the bound holds only when `q=r`, refuted by (5,3,2)).
+
+`harness/tools.py` now allows scratch writes under `/tmp` -- network and
+filesystem-sweep blocks untouched. Pinned by
+`test_sandbox_allows_scratch_but_not_escape`.
+
+**Run 8, after the fix:** both passes returned a verdict for the first time in
+three attempts, at half the cost ($0.27). t=0.3 **accepted at high confidence
+with the correct argument**. t=0.8 rejected at *medium* confidence on **scope** --
+the claim bounds values, not the preperiod -- which is a real distinction and not
+a defect in C0021.
+
+**But its `first_gap_line` is a fabricated quotation.** It cited a sentence that
+is verbatim from C0009 (superseded) and appears **nowhere in the 13,217-character
+prompt** -- verified by rebuilding the box and searching six fragments of it.
+The referee rejected on evidence it was never given. Mechanism unknown; do not
+guess at one.
+
+Consequence: a fabricated objection can only *block* a claim, never promote a
+false one, because promotion needs an agreed accept. `final=unresolved` left
+C0021 `open`, correctly. **Read the digest when anything reaches `proven`.**
+
+### Sheiner 2026, and the Lean question
+
+**Erez Sheiner, "Unique Winning Opening Move in Three-Row Chomp", arXiv:2605.23837**
+(v2 2026-06-09). Read in full; nothing of ours is subsumed. Three things of his
+to use: Lemma 2.3(a) (for fixed `q`, `f(q,0..q)` are distinct), Lemma 4.1
+(`f(q,q)` is the column max, hence `> q`), and confirmation his `B(q,r)`
+decomposition matches our recurrence including closed forms and tight cells.
+His Lemma 4.1 pairs with #G07 8.1 to sandwich `q+1 <= f(q,q) <= 2q+1`, both ends
+attained for `q <= 400`.
+
+His acknowledgements say the proof was **"fully formalized and machine-verified
+in the Lean 4 proof assistant, using only its standard library."** That is the
+exact base layer -- well-definedness of `f`, the two-branch recurrence, `mex`,
+well-foundedness -- that makes formalizing anything else here cheap, and it is
+**not linked in the paper**.
+
+**An email asking for it was sent to erez@math.biu.ac.il on 2026-09-27** (by the
+operator, from sidan.nguyen@gmail.com). It also offered the #G07 8.2 erratum and
+the independent check of his two lemmas. **If a reply has arrived, that changes
+the Lean plan -- check before rebuilding the base layer.**
+
+Standing view on Lean: worth it, but **not for C0012** (prior art, so it buys
+rigor on a known result). It is for the base layer plus whatever the real
+theorem turns out to be. The target `N(r)` bound is far too big to formalize on
+this budget.
+
+### Open work, in priority order
+
+1. **Write THE THEOREM.** The result is scattered across 23 ledger entries and
+   two proof files; nobody can read it. One island-01 session chaining the
+   recurrence -> C0012 -> C0021 -> the corrected state count into one statement
+   with one proof file. Build it on C0011/C0013, not on C0012.
+2. **C0013's closed form is wrong.** Per C0023(c) the Zeilberger state count
+   omits the preperiod `a_0(r)`, so the correct form is
+   `N(r) + period(r) <= a_0(r) + p_r (M_r+1)^(M_r)` -- a **recursion over r**,
+   not the displayed closed form. It must be restated and unrolled before
+   `2^(2^r poly(r))` means anything.
+3. **Novelty-check the remaining ~16**, #G07 and Sheiner in hand.
+4. **The 5-item referee eval**, if the gate misbehaves again. Build it from this
+   project's own real errors: C0012 and C0021 as-is must be accepted; C0009's
+   `n = p-q` slip, C0012's old "all 402 tight cells on row r=0" line, and
+   C0013's missing `a_0(r)` must be rejected. ~$2 per model. Three of those
+   errors actually fooled someone.
+5. C0021 needs no further referee runs -- it is redundant to #G07's published
+   `q+r+1`, which is sharper than its `3r-1`.
+
+### Gotchas that cost real time
+
+- `test_harness.py` **pollutes the ledger and charges the budget** -- it appends
+  claims, writes a corrupt line and a fake handoff. Run it in a throwaway copy
+  with a blanked ledger. Individual pure tests can be imported and called.
+- **Never hand-edit `LEDGER/claims.jsonl`.** Use `harness/ledger.py`. It is
+  append-only and last-entry-per-id wins.
+- A `proven` status says the proof survived the gate. It says **nothing** about
+  whether the result is new.
+- Bash heredocs in this environment **mangle backslashes** (`\\b` arrives as
+  `\x08`). For any edit containing regex escapes, use the Edit tool.
+- `RemoteTrigger` needs a structured `body` object, not a JSON string.
 
 ---
 
 ## 1. Where things stand
+
+> **STALE -- 2026-09-21. Kept for the record; see section 0 for current state.**
+> The status table below has since been corrected in place, but the surrounding
+> prose predates referee runs 3-8, the novelty audit, and autopilot.
 
 **Budget: $2.72 of $30 spent. $27.28 left.** All of it on OpenRouter; the Opus
 pre-screens were billed to the Claude plan instead.
@@ -34,6 +206,12 @@ Sessions run so far:
   limit; state survived only because `Commit state` has `if: always()`.
 
 ## 2. The next two things to run
+
+> **OBSOLETE -- 2026-09-21. Both have happened.** The referee has run eight
+> times, not zero; the Opus pre-screen ran and found a real error (the 402
+> tight-cell attribution). This section's title is actively wrong and it is kept
+> only because the reasoning in it explains why the gate was designed the way it
+> was. For what to run next, see section 0.
 
 ### (a) The wired referee, on GitHub Actions -- never yet executed
 

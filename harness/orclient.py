@@ -25,7 +25,7 @@ API = "https://openrouter.ai/api/v1/chat/completions"
 EXPLORER_MODEL = "xiaomi/mimo-v2.6-pro"
 REFEREE_MODEL = "xiaomi/mimo-v2.6-pro"
 # Not used by any code path yet.
-LIBRARIAN_MODEL = "deepseek/deepseek-v4-flash"
+LIBRARIAN_MODEL = "xiaomi/mimo-v2.6-pro"
 
 
 class BudgetExhausted(RuntimeError):

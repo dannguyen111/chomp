@@ -20,9 +20,11 @@ import requests
 
 API = "https://openrouter.ai/api/v1/chat/completions"
 
-# Pin the version. The bare slug floats to whatever is current.
-EXPLORER_MODEL = "deepseek/deepseek-v4-pro-0813"
-REFEREE_MODEL = "deepseek/deepseek-v4-pro-0813"
+# Pin the version where OpenRouter offers a dated slug. MiMo-V2.6-Pro has none
+# (2026-10-02), so this one floats; was deepseek/deepseek-v4-pro-0813.
+EXPLORER_MODEL = "xiaomi/mimo-v2.6-pro"
+REFEREE_MODEL = "xiaomi/mimo-v2.6-pro"
+# Not used by any code path yet.
 LIBRARIAN_MODEL = "deepseek/deepseek-v4-flash"
 
 

@@ -1,0 +1,28 @@
+{
+  "session": "S20261002T0953",
+  "island": "01-recurrence",
+  "turns": 142,
+  "output_tokens": 268543,
+  "minutes": 306.5,
+  "cost": 1.1537,
+  "total_spent": 14.4042,
+  "remaining": 15.5958,
+  "handoff_written": true,
+  "claims_appended": [
+    "C0032",
+    "C0033",
+    "C0034",
+    "C0035",
+    "C0036",
+    "C0037",
+    "C0038",
+    "C0039",
+    "C0040",
+    "C0041",
+    "C0042",
+    "C0043",
+    "C0044"
+  ],
+  "stopped_on": "wall clock",
+  "complete": true
+}

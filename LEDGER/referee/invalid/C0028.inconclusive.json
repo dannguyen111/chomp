@@ -1,0 +1,47 @@
+{
+  "claim": "C0028",
+  "agreed": false,
+  "final": "inconclusive",
+  "sandboxed": true,
+  "restated": "Let f(q,r) be the unique p such that (p,q,r) is a P-position of 3-row Chomp, defined by the Brouwer recurrence; for each fixed r let N(r) be the least q0 >= r such that the sequence f(q,r)-q is periodic for all q >= q0 (if row r has only finitely many P-positions, i.e. f(q,r) < q for all large q, N(r) is instead the least q with f(q,r) < q). Define a priori sequences g,h by g(1)=1, g(r+1)=g(r)(r+2)^(r+1), and h(r)=11+r+sum_{k=2}^{r} g(k)(k+2)^(k+1). Then for every r>=1, N(r) <= r+h(r), with g(r)=prod_{k=1}^{r-1}(k+2)^{k+1}, so N(r) <= 2^{O(r^2 log r)}. The bound is explicit and computable and no quantity on the right is defined by a recursion over the actual rows.",
+  "ledger_statement": "SHARPER CLOSED FORM: N(r) <= 2^{O(r^2 log r)}. The lcm recursion is LINEAR, not quadratic: q_{r+1} <= q_r (r+2)^{r+1}, because the pigeonhole's repeated state carries the phase a mod q_r, so the repeated-period s satisfies q_r | s AND p_r | s, hence q_{r+1}=lcm(q_r,p_r) | s <= q_r(m_r+1)^{m_r} directly -- no need to multiply (ii)'s p_r bound by q_r. Define g(1)=1, g(r+1)=g(r)(r+2)^(r+1), h(1)=12, h(r)=1+h(r-1)+g(r)(r+2)^(r+1). Then q_r <= g(r), u_r=N(r)-r <= h(r), so N(r) <= r+h(r) = r+11+r+sum_{k=2}^r g(k)(k+2)^(k+1) with g(r)=prod_{k=1}^{r-1}(k+2)^{k+1}, log2 g(r) ~ (r^2/2) log2 r. Improves C0027's 2^{2^{O(r)}} to 2^{O(r^2 log r)}. Sharpening to C*r remains open (discrepancy question).",
+  "submission_leaks": [
+    "island",
+    "referee",
+    "cross-reference C0012",
+    "cross-reference C0024"
+  ],
+  "escape_attempts_blocked": 0,
+  "spend": 0.0933,
+  "verdicts": [
+    {
+      "disposition": "inconclusive",
+      "gap_description": "no parseable verdict: the referee did not finish. This is a harness failure and says nothing about the claim.",
+      "confidence": "none",
+      "_temperature": 0.3
+    },
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": "Hence s is a period of the (eventually periodic) row-r sequence, so the fundamental period divides it: p_r | s.",
+      "gap_description": "The step is true but unproved: s is a period of the tail from a1 only, and 'p_r | s' needs the standard least-period argument (on the common tail both p_r- and s-periodicity hold, so gcd(p_r,s) is a period of a further tail, whence p_r | gcd(p_r,s) and p_r | s). A second, later omission: Lemma C' says 'Identical to the companion proof' and never discharges the base case r=1 or the c=0 term (h(0) undefined); this is fillable and I verified it \u2014 (iii) at r=1 gives u_1 <= 1+max(t_1=1,m_1=2)+q_1(m_1+1)^m_1 = 12 = h(1), and in fact N(1)=3 so u_1=2. Both gaps are cosmetic; the load-bearing Lemma A' (phase in the state forces the repeat distance to be a common multiple of q_r and p_r, so q_{r+1} | s <= q_r(m_r+1)^m_r) is correct given the stated inputs C0012/C0024, and the unrolling into g,h is a well-founded induction with no existential quantity left on the right-hand side.",
+      "counterexample_search": {
+        "range_checked": "full f(q,r) grid q <= 1200, r <= 200; census of all rows r <= 50000 (period, preperiod N, dvals, stale deathq/dconst); spot rows r = 0,1,2,3,120,11036,18718,28109,46110,49999,50000",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "arXiv API: all:\"chomp\"",
+          "OEIS: chomp preperiod",
+          "OEIS: A029899 A029900 preperiod bound",
+          "arXiv: Byrnes poset game periodicity effective bound"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "Effective. The bound is produced by explicit a-priori recursions on r alone: 'g(1) = 1, g(r+1) = g(r) \u00b7 (r+2)^{r+1}' and 'h(1) = 12, h(r) = 1 + h(r-1) + g(r) (r+2)^{r+1} (r >= 2)', closed as 'h(r) = 11 + r + sum_{k=2}^{r} g(k) (k+2)^{k+1}', yielding 'N(r) <= r + h(r) <= 2^{O(r^2 log r)}'. I reproduced the closed form exactly (h(1..6) = 12, 589, 360590, 2799720591, 329344704360592, 690680363344289640593 matches the recursion). The recursion-dependent quantities t_r = max(max_{c<r} u_c, r) and u_c are eliminated by a well-founded induction on r into h; no quantity known only to exist appears on the right, and the bound is evaluable for r = 1000 (in log space) from the statement alone. Sub-claims checked against the solver: f(q,r) <= q+r+1 (C0012) holds with tight slack at the diagonal for q<=1200, r<=200; m_r <= r+1 holds; Input-2 (iii) and Lemma A' inequality hold for all r<=200; stale-row convention N(r)=least q with f(q,r)<q matches the oracle for r<=200; live-row dvals and minimality of N under the q0>=r convention hold for r<=200; the r=120 anomaly (period 2, dvals 72,70) and the newer period-6/8 rows (r=11036, 18718, 28109, 46110) are consistent with the claim, which asserts nothing about periods. Note: the census to r=50000 shows periods 6 and 8 appear beyond Nivasch's r<=10000 range, which is irrelevant to this claim.",
+      "confidence": "high",
+      "_temperature": 0.8
+    }
+  ]
+}

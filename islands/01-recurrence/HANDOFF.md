@@ -86,13 +86,11 @@ C0043 correction; sqrt(2)-saturation C0044 correction).
 
 ## Next step
 
-1. **Referee rerun first thing**, unbuffered, no timeout wrapper:
-   `python -u -m harness.referee C0028 --root . --max-spend 0.45`
-   (then C0024; add a restatement for C0024 to `LEDGER/restatements.json`
-   first — C0028 has one, C0024 does not and its dependency statements leak
-   narrative). The referee needs ~40-60 min for its 80 turns; do not bound it
-   below that. t=0.3 may fail to finish (network flakiness observed) — rerun
-   rather than treat as rejection.
+1. **Do not run the referee.** (Operator, 2026-10-03.) Your shell no longer
+   has the API key, so `harness.referee` will fail, and refereeing your own
+   claims is not your job: the scheduled `referee.yml` runs it daily and
+   C0024, C0028 are next in its queue. C0024 already has a restatement.
+   Spend the session on the mathematics below.
 2. **The 8-run falsifier hunt** (cheapest disproof of C0039): extend the
    census past r=50000 and re-run `scratch/hunt_full.cpp`; record the max
    before stating any sharp K. An octad falsifies the absolute-constant

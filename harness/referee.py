@@ -205,8 +205,17 @@ def referee(root: Path, claim_id: str, session: str = "referee",
                 break
             for call in reply.tool_calls:
                 fn = call["function"]
-                args = json.loads(fn.get("arguments") or "{}")
-                result = tools.dispatch(fn["name"], args, box, sandbox=True)
+                # Referee run 13 (MiMo) sent arguments cut off mid-string and
+                # the bare json.loads killed the job with no verdict. Hand the
+                # error back as the tool result, as session.py does.
+                try:
+                    args = json.loads(fn.get("arguments") or "{}")
+                except json.JSONDecodeError as e:
+                    args = {}
+                    result = (f"TOOL ERROR: unparseable arguments ({e}). "
+                              f"Resend the call with valid JSON.")
+                else:
+                    result = tools.dispatch(fn["name"], args, box, sandbox=True)
                 if result.startswith("REFUSED:") and "outside" in result:
                     refusals += 1
                     print(f"[referee t={temp}] blocked an escape: "

@@ -10,6 +10,7 @@ only thing standing between you and believing a false lemma.
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -182,6 +183,19 @@ def _escapes(command: str, root: Path) -> str | None:
     return None
 
 
+def _tool_env() -> dict:
+    """The environment a model's shell commands run in: ours, minus the API key.
+
+    Session 28 found OPENROUTER_API_KEY in its shell and ran
+    `python -m harness.referee` on its own claims five times -- ~140 of its
+    300 minutes, outside the referee's schedule and spend cap -- then patched
+    the proof against the verdict and reran. A model that can call a model can
+    grade its own work; one agreed accept would have promoted a claim nobody
+    independent had read. Nothing a tool call legitimately does needs the key.
+    """
+    return {k: v for k, v in os.environ.items() if "OPENROUTER" not in k.upper()}
+
+
 def dispatch(name: str, args: dict, root: Path, *, sandbox: bool = False) -> str:
     try:
         if name == "bash":
@@ -197,6 +211,7 @@ def dispatch(name: str, args: dict, root: Path, *, sandbox: bool = False) -> str
                 capture_output=True,
                 text=True,
                 timeout=timeout,
+                env=_tool_env(),
             )
             out = r.stdout + (f"\n[stderr]\n{r.stderr}" if r.stderr else "")
             if r.returncode:

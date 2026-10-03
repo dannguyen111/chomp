@@ -259,3 +259,114 @@ prize and is still open; C0029 shows it is NOT needed for effectivity (a cruder
 3r bound already closes B1). The island should now weigh: (i) close live rows
 by a direct argument (cheap, completes the closed form), vs (ii) continue the
 renormalisation route for the sharp constant (harder, the original charter).
+## Session S20261003T0916 findings (do not re-derive)
+
+### The whole target reduces to ONE statement about the mex-generated diagonal (C0046)
+`|d_n - alpha n| <= K` for the diagonal `d_n=f(n,n)`, `alpha=1+sqrt(2)/2`. By
+complementarity (C0031) + bridge (C0017) this ALONE gives `q_n=beta n+O(1)`,
+`r_n=alpha n+O(1)`, and `N(r)=sqrt(2)r+O(1)` on stale rows (C0005, `beta/alpha=sqrt(2)`
+exactly). BHMS 8.8's `q_n<=3n-1` is the same argument with the coarse diagonal density
+`#diag<=2x/3` (giving `3=1/(1-2/3)`); the sharp `beta=1/(1-1/alpha)` needs
+`#diag<=x/alpha` = the open half of #G07 8.12. So the diagonal density bound IS the
+whole problem; the method (complementarity + density) is already right in the literature.
+
+### Structural mex reduction (C0045)
+`{f(a,n):a<n} = {d_a:a<n} = D_{<n}` EXACTLY (branch (A): `n>a => f(a,n)=f(a,a)=d_a`).
+So `d_n = mex(D_{<n} u R_n)`, `R_n={f(n,b):b<n}`, `|D_{<n}|=n`, `|R_n|<=n`. The 2-D
+diagonal mex collapses to 1-D + one row term. This is the object to attack.
+
+### Exact block-count identity + almost-monotone diagonal (C0047, C0049)
+`c_n := |(R_n\D_{<n}) cap [1,d_n)| = #{constants q_m<d_n} + fdip(n)` EXACT (mex
+coverage + C0031; 0/1200 violations). Mex sandwich `d_n = n+1-delta_n+c_n` with
+`delta_n=#{a<n:d_a>=d_n}`, `fdip(n)=#{a>=n:d_a<d_n}`. The diagonal is ALMOST-MONOTONE:
+`delta_n<=1`, `fdip(n)<=1` for all `n<=5000`; descents are always single-step
+(`d_n-d_{n-1}=-1`, 71 in 5000). Strip bound <=> block count `c_n=(sqrt(2)/2)n+O(1)`.
+CAVEAT: bounded dips necessary but NOT sufficient (C0026 sorted sets have
+delta=fdip=0 yet unbounded discrepancy) -- the mex is the essential selector.
+
+### CORRECTION of the 2026-10-01 dead end: the diagonal HAS a self-similarity cocycle (C0048)
+`D_d(x)+D_d(floor(bx))` for the mex-generated diagonal is BOUNDED, no drift
+(`[-0.77,2.55]`, slope-vs-log 0.018, to x<=2473/n<=3500). The old dead end's
+"drifting [-2.77,-0.42]" was the d_0-EXCLUDED normalisation (offset -1.63); both are
+bounded. So C0015 self-similarity + C0045 mex coexist on the SAME object = the correct
+Route A setup. NOTE: the cocycle is EQUIVALENT to the strip bound up to O(1) (it is the
+strip bound in two-scale form), so it is a REFORMULATION, not a free input. C0020/C0026
+stand: cocycle alone does not force bounded discrepancy; the mex must supply it.
+
+## Where this leaves the island
+The renormalisation target is now sharply: **prove the mex-generated diagonal has
+bounded discrepancy `|d_n-alpha n|<=K`** (= #G07 8.12). Everything else (all three strip
+bounds, the preperiod law on stale rows) follows. The pieces in hand: self-similarity
+cocycle on the diagonal (C0048), the exact block-count decomposition (C0049), and
+almost-monotonicity (dips <=1). The open step is to turn these into a proof that the mex
+SELECTS the bounded-discrepancy word (C0026 shows the cocycle admits exponentially many
+unbounded-discrepancy words; the mex must exclude them). This is the "rate of convergence
+to the fixed point" the charter names; making it rigorous is the remaining work.
+
+### C0050 -- NEGATIVE: the abstract Route A is DEAD; the answer lives in R_n's game structure
+The abstract mex `d_n = mex(D_{<n} u R_n)` with `|R_n|<=n` does NOT constrain the slope
+or discrepancy: adversarial `R_n = [1,t_n)\D_{<n}` forces any target `t_n` (any slope),
+giving `|d_n-alpha n|` UNBOUNDED (explicit 400-step demo: slope 1.807 -> 40, slope 1.4 ->
+123; the true alpha=1.707 -> 0.50; all `|R_n|<=n`). The block-count identity (C0049) holds
+for EVERY mex-generated sequence (not a discriminator). And any increasing slope~alpha
+sequence is mex-realisable (`R_n`=gaps, `|R_n|=d_n-n-1<=n`), so the C0026 cocycle words are
+mex-realisable: even mex + cocycle allow unbounded discrepancy. CONCLUSION: NO abstract
+renormalisation/mex argument proves the strip bound. The bounded discrepancy is forced ONLY
+by the SPECIFIC GAME STRUCTURE of `R_n={f(n,b):b<n}` (the row-n P-position tops). (This
+refines C0020/C0026 and kills "Route A" as an abstract combinatorial argument.)
+
+### R_n composition (the real object)
+For row n: `|R_n|=n` exactly (b=0..n-1 distinct), `R_n subset [1,d_n)` (ALL row-tops below
+the mex), and `R_n` = ~0.707n constants (ALL constants < d_n, by C0049) + ~0.293n diagonal
+values. The row tops `f(n,b)` form a staircase: mostly large "diagonal-tracking" values
+(roughly consecutive up to d_n) with drops to the constant values at scattered b. The strip
+bound <=> `c_n = #{constants<d_n} = (sqrt(2)/2)n + O(1)`, i.e. exactly the count of constants
+row n witnesses below its mex. The live attack: find a self-similarity / counting law
+SPECIFIC to how the constants are laid out in R_n across n (the real Friedman-Landsberg
+renormalisation), not of the diagonal abstractly.
+
+### C0051 -- NEGATIVE: row-profile rescaling is not a renormalisation; BHMS 8.10 is exact
+Row profiles `f(n,b)/d_n` do NOT rescale across rows (n vs n/gamma): aligned match only
+to staircase variance (~0.15, no preferred gamma) and the normalized CDF is UNIVERSAL
+(all rows identical shape, mean|F_n-F_m|~0.001 for every pair incl. controls). So the
+charter's "rescaling across r" is NOT row-profile geometry; the genuine self-similarity
+is the VALUE-DOMAIN cocycle `D(x)+D(bx)` of the diagonal/stale sets (C0048, rescaling the
+value sequence x->bx by b=1+sqrt(2)), not the row picture. DEAD END recorded.
+
+POSITIVE (verified 25/25): BHMS 8.10's exact witness law -- the m-th constant `c=q_m` is
+witnessed by EXACTLY m pairs (q,r) with q<c. This is a concrete game constraint on R_n:
+each constant has exactly m row-witnesses. Together with C0047 (c_n=#{constants<d_n})
+this is the count of constants row n witnesses below its mex, and a candidate counting
+input for the R_n self-similarity. Next: combine BHMS 8.10 + C0047 + complementarity to
+try to derive the block count c_n=(sqrt(2)/2)n+O(1) from the witness law.
+
+## SESSION S20261003T0916 — FINAL SUMMARY (26 claims C0045-C0070)
+
+**Project status:** primary goal (effective Byrnes, MISSION §4) ACHIEVED via C0028 (verified).
+MISSION §5 seed conjecture verified exact (9/9) & saturated (C0069). The bonuses: linear
+`N(r)<=C*r` (locking route C0068, -> island 01) and sharp `N(r)=sqrt(2)r+O(1)` (strip bound).
+
+**Sharp strip bound (this lane):** reduced to one statement `|d_n-alpha*n|<=K`, sharp integer form
+`|d_n-round(alpha*n)|<=2` (saturated, 0 viol to n=5000). Equivalent to constant density
+`#const<x=x/beta+O(1)` and block count `c_n=(sqrt2/2)n+O(1)`. **IRREDUCIBLY HARD on this lane** —
+every sub-problem (block count, overlap, almost-increasing delta_n<=1, dip covering) is CIRCULAR
+(= the density), and the mex+complementarity loop is EXPANSIVE/NEUTRAL (C0059/C0062) so convergence
+cannot force it. All shortcuts CLOSED: abstract mex (C0050), row scaling (C0051), BHMS sharpening
+(C0054, circular), local cocycle (C0055), R_n structure (C0056), finite-state (C0058), morphic/word
+(C0065), rate-of-convergence (C0062).
+
+**One genuine finding:** the DIP MECHANISM (C0049) — every dip `d_n=d_{n-1}-1` is a row-(n-1) top
+dropping out of R_n (universal 0/71 to n=5000). Exact mex-sandwich `d_n=n+1-delta_n+c_n` (C0060).
+
+**Honest corrections (see dead_ends):** "tractable sub-lemma" delta_n<=1 is circular (= density);
+"hole identity" is dip-calibrated (circular); rate-of-convergence = the strip bound (circular).
+
+**Next step:** prove the C0037 locking `N(r)-N(r-1)<=6` => `N(r)<=6r` (mission full success) — this
+is island 01's MACHINE (no Beatty signature in the increments), genuinely weaker/more tractable than
+the strip bound. The sharp strip bound needs a genuinely new non-convergence mechanism. Do NOT
+re-derive the closed shortcuts or circular sub-lemmas.
+
+**Confidence:** renormalization thesis (self-similarity => strip bound) is essentially exhausted /
+likely dead on this lane (20-yr open problem, no sub-problem is easier). BUT the project succeeds
+regardless (primary goal achieved; linear bound via island 01). Contribution = complete map + dip
+mechanism + rigorous closure of all wrong turns.

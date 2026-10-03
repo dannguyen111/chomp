@@ -173,3 +173,103 @@ VALUES at scattered arguments, not onset windows.
 **Revisit if:** never as stated; the corrected C0043 line has the right
 picture. Lesson: dissect at least a sample of the population before building
 theory on a single extremal example.
+
+### 2026-10-03 -- CORRECTION: "diagonal has no clean cocycle" is WRONG (see C0048)
+**Tried:** transfer the self-similarity cocycle to the diagonal discrepancy
+(this is the 2026-10-01 dead end "Diagonal discrepancy has no clean
+self-similarity cocycle", which concluded it drifts and is absent).
+**Correction:** The diagonal DOES have a bounded cocycle. Measured
+`D_d(x)+D_d(floor(bx))` over x<=2473 (diagonal to n=3500): bounded
+`[-0.774,2.551]`, slope-vs-log-x = 0.018 (negligible drift), decade ranges
+saturated. The old dead end's `[-2.77,-0.42]` was the d_0-EXCLUDED counting
+(constant offset -1.63); with d_0 included it is `[-0.77,2.55]`. In both
+normalizations it is BOUNDED (constant-offset, not literally {-1,0,1}, but no
+drift). So the C0015 self-similarity and the C0045 mex coexist on the SAME
+object (the mex-generated diagonal).
+**Revisit if:** THIS IS THE LIVE ROUTE. Self-similarity + mex on one object is
+the intended Route A setup. The remaining step is to prove the mex FORCES
+bounded discrepancy given the bounded cocycle (C0020/C0026 show cocycle alone
+is not enough). See C0048, C0045, C0047.
+
+### 2026-10-03 -- Route A (abstract self-similarity + mex -> bounded discrepancy) is DEAD (C0050)
+**Tried:** prove the strip bound from the abstract mex `d_n = mex(D_{<n} u R_n)` +
+the self-similarity cocycle + monotonicity (C0049 dips<=1) + block-count identity +
+complementarity -- i.e. every structure the prior claims assembled.
+**Failed because:** the abstract mex does not constrain the slope/discrepancy at all.
+Adversarial `R_n = [1,t_n)\D_{<n}` forces any target `t_n` (any slope), giving
+`|d_n - alpha n|` unbounded (explicit: slope 1.807 -> 40, slope 1.4 -> 123, 400 steps,
+all `|R_n|<=n`). The block-count identity (C0049) holds for EVERY mex-generated
+sequence, so it is not a discriminator. And any increasing slope~alpha sequence is
+mex-realisable (`R_n`=gaps, `|R_n|=d_n-n-1<=n`), so the C0026 cocycle-compatible
+unbounded-discrepancy words are mex-realisable too: even mex + cocycle allow unbounded
+discrepancy. So NO abstract renormalisation/mex argument can prove the strip bound.
+**Revisit if:** never, as an abstract argument. The strip bound is forced ONLY by the
+specific GAME structure of `R_n = {f(n,b): b<n}` (the row-n P-position tops). The live
+route is to find a self-similarity / invariant / counting law SPECIFIC to R_n (how the
+constants and row tops are laid out in row n), not of the diagonal abstractly. This is
+the real content of the Friedman-Landsberg renormalisation and it lives in the game, not
+in mex combinatorics. See C0050, C0045, C0049.
+
+### 2026-10-03 -- Row-profile rescaling across r is NOT a renormalisation (C0051)
+**Tried:** find the charter's "picture rescales across r" as an affine rescaling of
+individual row profiles `f(n,b)/d_n` (row n vs row n/gamma, both aligned and via CDF).
+**Failed because:** (a) aligned profiles match only to the natural staircase variance
+(~0.13-0.17) with NO preferred gamma; (b) the normalized CDF F_n(v) is UNIVERSAL --
+every row has the same shape (mean|F_n-F_m|~0.001 for ALL pairs, controls included), so
+the CDF shows no rescaling scale at all. The row picture does not rescale.
+**Revisit if:** never, as a row-profile statement. The genuine self-similarity is the
+VALUE-DOMAIN cocycle D(x)+D(bx) of the diagonal/stale sets (C0048, a rescaling of the
+value SEQUENCE x->bx by b=1+sqrt(2)), not of row geometry. Seek the self-similarity in
+how the game lays out the value SETS across rows, not in row profiles.
+
+### 2026-10-03 -- Positive note: BHMS 8.10 witness law is exact (do not re-derive)
+Not a dead end but a verified constraint. For c=q_m (the m-th constant), the number of
+pairs (q,r) with q<c and f(q,r)=c is EXACTLY m (25/25 verified). This is a concrete
+game law on R_n (each constant has exactly m row-witnesses) and may be the counting
+input the R_n self-similarity needs. See C0047 (c_n=#constants<d_n) + this = the count
+of constants witnessed by row n below its mex.
+
+### 2026-10-03 -- Sharpening BHMS 8.8 from 3 to beta is CIRCULAR (C0054)
+**Tried:** push BHMS 8.8's contradiction from constant 3 to beta=1+sqrt(2) (the C0053
+crux lower bound s(m)>=m/beta), using the exact witness law as the sharpening input.
+**Failed because:** reconstructing BHMS 8.8 with general slope c shows the pigeonhole
+needs the hole X - dcount(X) >= n where dcount(X)=#{i<2n-1: d_i<=X} is the DIAGONAL
+COUNT. With the crude bound d_i>=i+1 (C0012) this forces c>=3 exactly (BHMS's 3 is
+tight for the method, saturated at c=3). With the true diagonal density d_i~alpha*i the
+threshold drops to c~beta -- so the gap 3->beta IS the diagonal strip bound (C0046).
+Knowing dcount to that precision = knowing the diagonal density = the target. Circular.
+Also the BHMS argument is stuck at c=3 under the crude bound (c in [a+1,2a-1] minimized
+at a=2,c=3). So there is NO independent sharpening of BHMS 8.8.
+**Revisit if:** never as an independent route. The target is the diagonal strip bound /
+constant density (C0046/C0052) itself; attack it directly via the value-domain cocycle +
+mex on the diagonal (C0048) or the game structure of R_n (C0050), not via BHMS 8.8.
+
+### 2026-10-03 -- "Almost-increasing" sub-lemma (delta_n<=1) is CIRCULAR (= the strip bound)
+**Tried:** prove the bounded-dip lemma delta_n = #{a<n: d_a>=d_n} <= 1 (diagonal almost-increasing)
+as a "smaller true thing" toward the strip bound.
+**Failed because:** delta_n = 2n - |D_{<n} cap R_n| - d_n + 1 exactly, so delta_n<=1 <=> overlap
+|D cap R| >= 2n-d_n, and the overlap is the DENSITY (C0063) = the strip bound. Measured
+overlap-(2n-d_n)=1 (delta_n=0 at non-dips). So proving delta_n<=1 requires the full strip bound.
+NOT a smaller problem -- it is the target restated.
+**Revisit if:** never as a "tractable sub-lemma". The strip bound has no easy sub-problem; the
+density is irreducible. Only a genuinely new mechanism can prove it.
+
+### 2026-10-03 -- "Hole identity" (2 holes = {f(n,b),f(n,b+1)}) is DIP-CALIBRATED (circular)
+**Tried:** identify the 2 holes in S_b below d_n as the row values {f(n,b),f(n,b+1)} -- looked like
+a structural (non-circular) identification.
+**Failed because:** adversarial test at NON-dip columns refuted it: at n=144 b=140 holes=[242,244],
+b=141 holes=[243], b=143 holes=[244] -- holes differ, count varies 1..7. Only at the dip column
+b=n-2 are the holes exactly {f(n,b),f(n,b+1)}. So the identification is CALIBRATED to the dip
+column = CIRCULAR (encodes d_n), not structural.
+**Revisit if:** never as a non-circular identification. Lesson: an apparent mechanism that holds
+only at extremal/dip columns is a coincidence, not a lemma. Always adversarially test at
+neighboring columns.
+
+### 2026-10-03 -- Rate of convergence / Beatty modulation of preperiod = circular or absent
+**Tried:** (a) the charter's "rate of convergence to the fixed point" as an independent handle;
+(b) a Beatty modulation of the preperiod increments N(r)-N(r-1) as a renormalisation structure.
+**Failed because:** (a) the rate #{const<x}/x -> 1/beta has x*|diff| bounded = the strip bound
+(circular); (b) the increment "wave" has amplitude ~2.3 for ALL theta (sqrt2,alpha,beta) = the
+general spread, not a specific Beatty frequency. So no renormalisation signature in the
+preperiod increments -- the locking is the machine's (island 01 C0032).
+**Revisit if:** never for the locking from the renormalisation side; route it to the machine.

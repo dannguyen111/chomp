@@ -1,6 +1,6 @@
 {
   "claim": "C0024",
-  "agreed": false,
+  "agreed": true,
   "final": "inconclusive",
   "sandboxed": true,
   "restated": "Let f(q,r) be the unique p such that (p,q,r) is a P-position of 3-row Chomp, defined by the Brouwer recurrence; for each fixed r let N(r) be the least q0 >= r such that the sequence f(q,r)-q is periodic for all q >= q0 (if row r has only finitely many P-positions, i.e. f(q,r) < q for all large q, N(r) is instead the least q with f(q,r) < q). Define B_c(a)=f(c+a,c)-(c+a) (undefined where no loser [c,a,b] exists), u_c=N(c)-c, p_c=the period of f(q,c)-q for q >= N(c) (p_c:=1 for rows with finitely many P-positions), q_r=lcm{p_c : 0<=c<r}, m_r=1+max{B_c(a) : 0<=c<r, a>=0}, U_r=max{u_c:c<r}, t_r=max(U_r,r). Then for every r>=1: (i) m_r<=r+1; (ii) p_r<=q_r(m_r+1)^(m_r); (iii) u_r<=max(t_r,m_r)+q_r(m_r+1)^(m_r); (iv) q_{r+1}<=q_r^2(r+2)^(r+1). Hence N(r)<=r+max(t_r,m_r)+q_r(m_r+1)^(m_r) for rows with infinitely many P-positions, and N(r)<=r+1+max(t_r,m_r)+q_r(m_r+1)^(m_r) otherwise. Every quantity on the right is computed from the rows c<r alone, so this is an effective recursion for N(r).",
@@ -13,8 +13,8 @@
     "cross-reference C0022",
     "cross-reference C0023"
   ],
-  "escape_attempts_blocked": 0,
-  "spend": 0.14,
+  "escape_attempts_blocked": 1,
+  "spend": 0.1412,
   "verdicts": [
     {
       "disposition": "inconclusive",
@@ -23,26 +23,9 @@
       "_temperature": 0.3
     },
     {
-      "disposition": "accept_with_gaps",
-      "first_gap_line": "(i) B_r(a) <= r for every defined value (so m_r <= r+1)",
-      "gap_description": "As literally stated (i) is false: at r=1, a=0 one has B_1(0)=f(1,1)-1=2 > 1=r (the only violation in r<=400 and sampled rows to r=5000); what C0012 gives is B_r(a) <= r+1, which is what the proof body actually derives and all that (iv) and the state bound require. A second fillable gap: the load-bearing sentence \"Zeilberger's Lemma Bounded then applies with M = m_r: every defined B_r(a) <= m_r\" is cited but never stated or proved (it is true: if v=max L_a > m_r then v-1 forces L_{a-1}=v, inductively L_0=v, but L_0=mex(W_r(0)) <= m_r), and the stale-row facts (contiguous definedness, terminator B_r(a*)=0) are asserted without proof; all were verified numerically and are short arguments.",
-      "counterexample_search": {
-        "range_checked": "all r <= 400, a <= 1500 against the validated solver (fundamental recurrence with the stated W_r, W-periodicity/preperiod, definedness structure, exact p_r,u_r,N(r) vs the 50000-row census, bounds (ii),(iii),(iv) and both N(r) bounds with exact m_r); all r <= 50000 census-based checks of (ii),(iii),(iv),N(r) with m_r at its minimum value 2; sampled full rows r = 500, 700, 1000, 1500, 2000, 3000, 5000 with a <= 3000; boundary cases r = 0, r = 1 and all stale rows by hand and solver",
-        "result": "counterexample found",
-        "counterexample": "only to sub-assertion (i): r=1, a=0 gives B_1(0)=f(1,1)-1=2 > 1=r. No counterexample to (ii), (iii), (iv) or to the stated N(r) bounds anywhere in the tested range (r <= 50000); the fundamental recurrence, the W_r formula (including the V' family), and Lemma P's preperiod bound t_r all reproduce the solver exactly."
-      },
-      "novelty": {
-        "searched": [
-          "arXiv API: chomp AND periodicity",
-          "arXiv: effective Byrnes poset game periodicity",
-          "OEIS: chomp 3-row N(r) preperiod bound",
-          "local literature record: Byrnes 2003, Zeilberger exposition, Brouwer-Horvath-Molnar-Saska-Szabo 2005, Sheiner arXiv:2605.23837 (May 2026), 4xn computational study (April 2026)"
-        ],
-        "result": "inconclusive",
-        "reference": null
-      },
-      "effectivity_check": "Effective, not a reassertion of existence: the constants are produced. Quote: \"(iii) u_r <= max(t_r, m_r) + q_r (m_r + 1)^{m_r}\" and \"(iv) q_{r+1} <= q_r^2 (r + 2)^{r + 1}\", together with \"m_r <= r + 1\" and the explicit base q_1 = p_0 = 1 (row 0 has constant B_0 = 1). Substituting the bounds recursively gives a pure recursion in r alone (q_{r+1} <= q_r^2 (r+2)^{r+1}, u_r <= max(t_r, r+1) + q_r (r+2)^{r+1}), so N(r) is bounded by a finite integer computable from r with a program or calculator; no step appeals to a quantity known only to exist. Caveat honestly admitted by the submission: this is a recursion, not a closed form \u2014 a closed form needs (Z2), a bound on lcm{period(c): c<r}, which remains open \u2014 and the resulting bound is enormous (log q_r grows like 2^r), though fully computable.",
-      "confidence": "high",
+      "disposition": "inconclusive",
+      "gap_description": "no parseable verdict: the referee did not finish. This is a harness failure and says nothing about the claim.",
+      "confidence": "none",
       "_temperature": 0.8
     }
   ]

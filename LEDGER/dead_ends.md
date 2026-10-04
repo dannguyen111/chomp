@@ -273,3 +273,154 @@ neighboring columns.
 general spread, not a specific Beatty frequency. So no renormalisation signature in the
 preperiod increments -- the locking is the machine's (island 01 C0032).
 **Revisit if:** never for the locking from the renormalisation side; route it to the machine.
+
+### 2026-10-04 -- Counting inequality over value-fibers is NOT the interleave proof
+**Tried:** explain the run bound (max 7) by a pigeonhole over value-fibers: the
+fiber of value v is the c-interval [(v-1.5)alpha, (v-0.5)alpha) (alpha = 1/(2-sqrt2)),
+consecutive fibers are alpha-spaced and each contains the stale row r_{v-1}, so
+8 consecutive values would need 8 fibers served by only ~6 live rows.
+**Failed because:** (a) long G-runs of consecutive VALUES exist (up to 18, e.g.
+v=29111..29128) with multi-period rows double-serving values (row 49558 serves
+both 29030 and 29032), so value-count is not binding; (b) the binding constraint
+is PHASE ALIGNMENT -- a period-p row offers its different values at different
+phases, so it cannot occupy two rungs of one run; the run bound is about
+anti-diagonals in the (phase, height) table, not value counts; (c) the premise
+"each fiber contains stale row r_{v-1}" has 89 exceptions in 28999 (the strip
+error 1.853 exceeds the fiber half-margin 0.5*alpha = 0.854), so it is not even
+true uniformly and any proof using it needs a sharper strip (|r_n - alpha n| <
+0.85) or a direct argument.
+**Revisit if:** a phase-aware counting lemma is found: e.g. bound the number of
+consecutive anti-diagonal cells coverable by rows whose phase-value functions
+v_c(phi) are p_c-periodic with v_c = round((2-sqrt2)c)+{0,1}. The phase-injectivity
+(c -> v_c(phi) injective at each phi, C0075) is the constraint a pigeonhole must use.
+
+### 2026-10-04 -- Greedy generation of the p1 value sequence from the Beatty skeleton is FALSE
+**Tried:** generate the period-1 tail values from the row index alone: v_c =
+round((2-sqrt2)c)+1 if free else round((2-sqrt2)c) (and lo-first variants), with
+multi-period rows contributing their value sets as they arrive in c-order.
+**Failed because:** the rule mispredicts exactly the 866 dip rows, and at EVERY
+dip row the preferred (high) value was FREE (866/866) -- the dips are not
+collision-forced; the offset choice carries extra mex/basin information (C0036:
+which fixed point the machine reaches is basin-dependent). So the sharp value
+law C0077 (v_c = round(theta*c)+{0,1}) does NOT close into a generation rule,
+and the interleave bound cannot be proved from value law + injectivity + fill.
+**Revisit if:** the dip set is characterized (necessary conditions known:
+both neighbours stale 866/866, frac(2 theta c)<=0.5 for 859/866, density
+0.04376 ~ theta^2/8 = 0.04289; not sufficient). A closed dip rule would turn
+the value law into a generation rule and make the run bound pure combinatorics.
+
+### 2026-10-04 -- Naive SAT over (value law + free deltas) is trivially SAT (do not run it)
+**Tried:** decide the interleave bound by SAT over rows = (period | 72, phase
+offset, {0,1}-dip) with the measured laws as constraints, asking for an 8-long
+anti-diagonal.
+**Failed because:** with the class pattern (stale/live) and the delta pattern
+free, the model admits 8-runs immediately -- the census contains 36 explicit
+windows where 8 consecutive values are assignable under free deltas (C0083),
+e.g. rows 3202..3217 carrying 1877..1884. So SAT returns SAT and tells you
+nothing; the real content is the delta pattern (and the multi-period phase
+alignment), which the abstract model does not constrain. Constraining the
+stale pattern to its real form = re-checking the data; constraining it to
+"discrepancy <= K" = the strip bound (the hard open target).
+**Revisit if:** the delta rule (C0082) is known -- then SAT over the remaining
+freedom (multi-period band shapes + phases) is a meaningful decision problem.
+The finite dissection (36 windows, all failing on the real delta pattern) is
+the replacement task; see C0083 and the handoff.
+
+### 2026-10-04 -- Cheap correlates of the dip set delta_c=0 all fail
+**Tried:** characterize the 866 dip rows (v_c = round(theta*c), C0082) via
+N(c) parity, (N(c)+c) parity, (N(c)-c) mod 3, and proximity to the diagonal's
+own dip events (C0049's d_n = d_{n-1}-1 rows, 43 of them <= 3000).
+**Failed because:** parity and mod-3 are balanced in both classes (dips
+385/481 on N-parity vs norm 9733/9189; mod-3 284/293/289 vs 6240/6322/6360);
+distance to nearest diagonal dip: p1 dips sit 1-13+ away (3 at distance 1,
+spread out), while NORMAL rows are at distance 0-7 at least as often (17 at
+distance 0 in a 2000-row sample). So the delta rule is not a parity/N/diagonal-
+dip function; it is basin content of the C0032 machine (C0036, C0082).
+**Revisit if:** someone has a global characterization (e.g. via the machine's
+attractor selection or the value-set holes G of C0076); local correlates are
+exhausted at this level of generality.
+
+### 2026-10-04 -- Dip rule is NOT diagonal-avoidance (A029900 not a forbidden set)
+**Tried:** explain the delta choice (C0082) as avoidance of the diagonal set:
+v_c takes lo (dips) when hi = round(theta*c)+1 collides with a diagonal value.
+**Failed because:** p1 values are diagonal values FREELY (693 of 1182 p1 rows
+<=3000 have v_c in the diagonal); at dips only 26/49 have hi diagonal (vs ~50%
+baseline), and normal rows take a diagonal value as hi 662/1133 times. So the
+diagonal is not avoided and carries no selection information for delta.
+**Revisit if:** never as avoidance. The dip rule remains basin content of the
+C0032 machine; the C0085 tie-in (stale-cluster fibres) is the live handle.
+
+### 2026-10-04 -- Dip rule is not a local function of the class word, u_c, or conservation
+**Tried:** (a) decide delta_c from the class-word window (stale/p1/multi) on
+c-k..c+k, k<=5, with and without the frac(2 theta c) bin; (b) delta_c as a
+function of u_c = N(c)-c alone or (u_c, round(theta c) parity); (c) value law
+as a function of the preperiod via conservation, v_c = 2c - N(c) + eps.
+**Failed because:** (a) ambiguity persists and GROWS with k (k=5: 17 ambiguous
+patterns still cover 9503 of 19788 rows); even the dominant pattern SPS|frac-L
+is mixed 9135/859. Real signal exists but is non-deterministic: all dips are
+SPS (both neighbours stale), and the k=2 dip rate is 13.3% at PSPSS vs 1.3% at
+PSPSP (the c+2 class matters). (b) u_c -> delta has 384 conflicting rows;
+(u_c, parity) -> delta has 183. (c) v_c - (2c-N(c)) spans {-2..6} with counts
+{0:4707, 1:9581, 2:3912, 3:918, 4:473, 5:176, 6:16} -- O(1) but not a function.
+**Revisit if:** someone has the machine-level basin selection rule (C0032/C0036);
+every finite-window and single-variable correlate at this level is now ruled
+out, so do not re-test them. The C0085 stale-cluster fibre configuration and
+the k=2 asymmetry (PSPSS vs PSPSP) are the surviving partial signals.
+
+### 2026-10-04 -- CORRECTION: "dip rule is not a local function of the class word" is only true for SMALL k (see C0086)
+**Correction to the entry above ("Dip rule is not a local function of the class
+word, u_c, or conservation"):** the k<=5 verdict was right but the conclusion
+"determined by global structure" was WRONG. Extending the same test to k<=32
+with shuffle controls shows delta IS a deterministic function of the class word
+on [c-30, c+30] (W_30 groups pure at 100k: 39356 groups, 0 mixed; shuffled
+control gives 16.4 mixed groups -- not vacuous). The u_c/conservation and
+diagonal-avoidance negatives stand unchanged. Lesson: when an ambiguity count
+decreases monotonically with the window (96.6%->48% for k=1..5), run the window
+to its resolution point with a shuffle control before calling the route dead.
+**Revisit if:** this IS the live route (C0086): enumerate the class-word windows
+admitting the delta staircase and prove the recurrence cannot realize them.
+
+### 2026-10-04 -- CAVEAT (not a dead end): 'absolute c0=7' vs 'probabilistic c0 drift' is NOT decided by current data
+**Tried:** use the pair-surrogate (C0092) to argue the run bound follows from
+the pair potential.
+**Failed because (as a proof):** the staircase pattern's pair energy under J is
+FAVORABLE (3-dip suffix: 2J(1)+J(2) = +1.9), so under the pair measure the
+per-window octad probability is ~p^3 e^{1.9} (1-p)^5 ~ 6e-4 -- rare, NOT
+forbidden. Over the 36 windows of the 100k census that predicts 0.02 expected
+octads (observed 0: trivially consistent); extrapolated rate ~2e-7/row puts
+the first octad near rows 5e5..1e6 -- REMARKABLY close to the threshold-ladder
+extrapolation R_8 ~ 5.6e5. So the current data cannot distinguish:
+(A) an absolute bound c0=7 (C0039 as stated), from
+(B) a probabilistic c0 that drifts 5->6->7->8... at extreme r (same range-drift
+    lesson as C0003/C0037 sup-saturation and the c0 drift itself).
+If (B) holds, the plug-run route yields N(r) <= (c0(r)+2) r with c0(r) growing
+like log-ish -- NOT a constant C, so MISSION's 'full success' would need a
+different argument (though N(r) = O(r log log r)-ish would still beat C0028).
+**Revisit if:** the census is extended past 5e5 rows (the decisive range for an
+octad). An octad at ANY r falsifies the absolute-constant form of C0039 but
+NOT the locking C0037 (which needs O(1) runs at each r, and would then need
+runs bounded by a slow function). State the C0039 consequence as 'c0 absolute
+(currently 7)' only with this caveat attached.
+
+### 2026-10-04 -- PITFALL: machine simulation needs QMAX >= 2*cmax (table truncation fakes law failures)
+**Tried:** verify the C0093 envelope/wobble laws at 4x scale (rows c in
+[700,1124]) using chomp.table(cmax, cmax+60).
+**Failed because:** the machine probes q = a + c up to ~2c+10; with QMAX =
+cmax+60 the table is truncated and B(cp, a+c-cp) silently returns None, so
+k* gets stuck at a constant (523) and M-c collapses (-59..-233), faking 4
+wobble-decomposition 'failures'. Rerun with QMAX >= 2*cmax + margin: all 14
+rows pass every law, k* matches the census exactly. Lesson: when simulating
+row c, always set QMAX >= 2c; cross-check k* against the census tail value
+(it must equal v_c) before trusting any statistic.
+**Revisit if:** never -- the pitfall is documented; the census cross-check
+(k* == v_c) is the cheap guard.
+
+### 2026-10-04 -- LESSON (third occurrence): a sampled maximum is not a supremum
+**Tried:** treat max top - 2c = +3 (from a 5% sample sweep over c in [300,5000])
+as the constant in the 2c peak law.
+**Failed because:** a targeted 200-row scan over [200,1500] found +4 at 2 rows
+(~1% rate) the sweep missed. C0094's O(3) corrected to O(4) (true sup unknown).
+Same failure mode as c0 drift (5->6->7) and C0003's strip sup (5.696->5.755):
+every 'saturated/maximum' claim on this project must carry its sampling rate.
+**Revisit if:** never -- always report the sample size next to any maximum, and
+state 'at least K' rather than 'K'.

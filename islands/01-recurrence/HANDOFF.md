@@ -1,119 +1,55 @@
-# HANDOFF — session S20261002T0953 (island 01-recurrence)
+# HANDOFF — session S20261004T0954 (island 01-recurrence)
 
 ## State
 
-The MISSION target (any computable bound on `N(r)`) is met in closed form by
-**C0028** (`N(r) <= 2^{O(r^2 log r)}`, proof in `proofs/C0028.md`; two addenda
-this session fixed presentation gaps and the referee's one named gap `p_r | s`,
-now proved via the subtraction-closed set of periods). C0024 and C0028 remain
-`open` pending the referee: one run completed, t=0.3 died to harness/network
-flakiness, t=0.8 returned **accept_with_gaps** with no objection to the bound.
-The remaining frontier is the sharpening **`N(r) <= C r`**. This session built
-the recurrence-internal attack's concrete form: an exact finite machine for
-each row (C0032, proved), an explicit determinism onset
-`sigma_r = max_{c<r} N(c) - r` (C0033, proved), the flagship locking conjecture
-`N(r) <= max_{c<r} N(c) + 6` (C0037, inducts to `N(r) <= 6r`), and the plug-run
-conjecture (C0039) reduced to one falsifiable statement about periodic tails:
-**no 8 one-per-row tail-value matches can cover 8 consecutive columns**
-(c0 = 7 verified on the complete census: 75821 heptads, 0 octads). Proved
-along the way: the single-row run lemma (C0041). Three attractive stories were
-refuted and corrected in the ledger (pure-poset route C0042; onset alignment
-C0043 correction; sqrt(2)-saturation C0044 correction).
+The MISSION target (any computable bound on `N(r)`) is closed in the weak form by C0028 (`N(r) <= 2^{O(r^2 log r)}`, awaiting the scheduled referee); the frontier is `N(r) <= C r`. This session reduced that sharpening from "the mex is chaos" to a chain of exact finite statements. The run bound (post-onset plug runs of a fixed `p*` over consecutive columns) is EXACTLY 7 over all q to rows 100000 — computed by a finite reduction (all periods divide 72, so runs are anti-diagonals in `Z_72 x heights`, C0071) — and the 696 heptad classes are frozen. The obstruction to an 8-run is isolated to the delta rule F: which rows `c` take the LOW value `v_c = round((2-sqrt2)c)` instead of the high one (+1); F is a deterministic lookup on the radius-30 class word (C0086), its pair correlations `J(k)` form a quasi-periodic oscillation that suffices to reproduce the bound in surrogates (C0092), and eight carrier-layers (class/SPS geometry, value economy, hole bookkeeping, parity, window overlap, local rates, preperiod residual) are refuted. The machine route reached a closed form: the C0032 machine's value selection satisfies the ENVELOPE FORMULA `k* = max(inj_a + a) - a* + 2` (exact on every simulated row) and the WOBBLE DECOMPOSITION `delta = m + s` with `(m,s)` on two lines `m+s = 0` (dips) / `m+s = 1` (non-dips) — so the lo/hi choice is which line a 2-integer wobble lands on. Interlocking structural laws: the value law (C0077), conservation `u_r + v_r = r + O(1)` (C0074), and the 2c PEAK LAW `max_q f(q,c) = 2c + O(4)` (C0094 — CORRECTED same-session from O(3), which was sample-limited). One theorem is proved: C0080 (same-top cells form a matching — one rung per row AND one witness per column), referee-ready. The honest open question: current data cannot distinguish an ABSOLUTE bound c0=7 from a probabilistic c0 drifting at extreme rows (first-octad estimates bracket 6e5–8e7 rows); the 5e5-row census decides both.
 
 ## This session
 
-1. Adversarial review of C0024/C0028: verified Zeilberger's Lemma Bounded
-   (source ~line 612) carries the `m_r` step; patched C0028 (Addendum 1: stale
-   case of Lemma A'; `h(r-1) >= r+1` by induction; Addendum 2: the `p_r | s`
-   step the referee flagged — periods closed under subtraction).
-2. Derived and validated the merged-trail machine (C0032): `V'` decays exactly
-   like the mex-trail, so `H_{a+1} = dec(H_a) u {mex(V''(a) u H_a) - 1}`
-   generates `B_r` exactly (validated vs solver, all rows r<=300).
-3. Found the determinism onset `sigma_r` (C0033) and measured the lock delay
-   (C0034): `u_r - sigma_r = N(r) - max_{c<r}N(c) in [-4,+6]` to r=50000.
-4. Identified the mechanism (C0035 staircase = repeated-p* columns; C0036
-   attractors; C0040 run-death: long runs die of validity q>p*, medium runs of
-   coincidence failure) and refuted the naive routes (C0038, C0042).
-5. Proved C0041 (single-row run lemma): post-onset each witness row covers at
-   most `p_c` consecutive columns of a plug run (unit descent vs periodicity).
-6. Plug-run hunts: tables r<=800/1200/1800 gave max 6; the complete-census
-   scan (`scratch/hunt_full.cpp`, all 50000 rows' periodic tails, all
-   q<=72000) gives **max 7, 75821 heptads, 0 octads** — the constant drifts
-   with range (5->6->7), so always test on census tails, never small tables.
-7. Heptad anatomy (C0043, population-corrected): exactly one witness per
-   column, 7 distinct rows one column each (150/150 sampled); the
-   "tail-onset alignment" story is refuted (offsets spread from 69 up).
-8. C0044 and its correction: the sqrt(2) saturation of q0/cstar is mostly the
-   admissibility filter speaking (slack q0-M[cstar] spans 0..9521); survives:
-   the boundary is attained (slack 0..2 runs exist) and octads exist nowhere.
-   The proof must work uniformly in slack; the N-law link is speculation only.
-9. Referee C0028 run (INCONCLUSIVE overall; t=0.8 accept_with_gaps, gap
-   patched). Two earlier dispatch attempts died to session wall-clock caps.
+1. Found `scratch/` empty at session start (previous session's scripts lost); rebuilt the analysis as `scratch/finite_runs.py` (the exact finite scan), `ladder_anatomy.py`, `value_set.py`, `quick_tests.py`, `f_vs_p1.py`, `mixed_dissect.py`, `desc_crosscheck.py`. Preserved the new 100k census at `scratch/census_100000.tsv` (validated: reproduces max-run 7, 696 heptads) — do NOT recompute it.
+2. Built the finite reduction (C0071) and cross-validated it against the old `hunt_full` counts exactly (C0078). Measured the threshold ladder 0,2,9,11,42,585,18718 for L=1..7 (C0072) — this EXPLAINS the c0 drift 5->6->7 as a range effect. Extended the census to r=100000: no octad (C0081), 696/696 heptads frozen (C0079), full taxonomy (C0084).
+3. Proved C0080 (single-top-per-row AND one-witness-per-column, both 3-branch mex proofs) after a descent-free test on tail words exposed the argument; extended adversarial sweeps 0/175523.
+4. Found the dictionary: delta = F(W_30 class window) exact and non-vacuous (C0086), periods = F(W_10), 97 tail signatures (C0087); the class word has forbidden blocks and subexponential complexity e^{O(sqrt k)} — CORRECTING C0018's "maximal chaos" reading (C0088: its numbers were right, its conclusion was sample-size saturation).
+5. Ran the null-model program: local-rate nulls (radius <= 6) make 8-runs in 30-50% of trials while the real word never does (C0091); the pair potential J(k) = log R2(k) suffices in surrogates (C0092, honest caveat: octads rare not forbidden, ~0.0013/dataset exact); the J-curve is complete (context-nulls -> octads; real J -> fat tail capped at 7; Bernoulli -> thin tail). Eight carrier layers refuted along the way.
+6. Machine route (C0093, 8 addenda): the selection happens in a transient-steered drain; the H-configuration is decisive; ENVELOPE FORMULA `k* = max(inj_a+a) - a* + 2` exact; WOBBLE DECOMPOSITION delta = m+s on two lines (exact 200/200); wobble components m,s CANCEL at distance k (mirroring structural); extreme contacts (m>=+3) occur in both dips and non-dips (s compensates) — the line-choice is genuinely the joint (m,s) landing. And C0094: the 2c peak law (game form `max_q f(q,c) = 2c + O(4)` corrected; machine form `M = c + O(2)` at c<=300; `a* = c - v_c + O(4)`).
+7. What did NOT work (all in dead_ends): value-fiber counting; greedy generation of the value sequence; naive SAT (trivially SAT); language constraints alone (needed segments ARE realizable); stale geometry and value economy as chain-law mechanisms; parity; window overlap; preperiod residual; coarse/phase-resolved transient statistics; one script pitfall (machine sim needs QMAX >= 2c — truncation fakes failures; guard: k* must equal census v_c); and the sampling lesson (three occurrences: c0 drift, C0003 sup, C0094 O(3)->O(4) — a sampled maximum is not a supremum).
 
 ## Claims logged
 
-- **C0032** (lemma, open, `proofs/C0032_machine.md`): merged-trail machine
-  `H_{a+1}=dec(H_a) u {mex(V''(a) u H_a)-1}` generates `B_r` exactly.
-- **C0033** (lemma, open, same proof): determinism onset
-  `sigma_r = max_{c<r} N(c) - r`.
-- **C0034** (observation, evidence): lock delay `u_r - sigma_r in [-4,+6]` to
-  r=50000; abstract machines do NOT share this (transient ~2.4M, C0038).
-- **C0035** (observation): `V''(a)` = column `q=a+r` of f minus q; plug
-  staircases = fixed `p*` recurring in consecutive columns (runs reach 177+
-  with transients; 7 without).
-- **C0036** (observation): attractors — interval fixed points `[0,k-1]`,
-  termination, p-cycles of AP-mod-p unions; basin-dependent.
-- **C0037** (conjecture, open): `N(r) <= max_{c<r}N(c) + 6` => `N(r) <= 6r`;
-  any explicit K gives `N(r) <= K r` (full success). THE flag.
-- **C0038** (observation): abstract-machine transients grow ~2.4M even at
-  q=1,p=1 — the O(1) lock is chomp-specific.
-- **C0039** (conjecture, open): post-onset plug runs <= absolute c0; c0 = 7 on
-  the COMPLETE census (75821 heptads, 0 octads at q<=72000); consequence
-  `N(r) <= 9r` at c0=7. Cheap falsifier: an 8-run in extended tails.
-- **C0040** (observation): run-death mechanism + plane antichain reframing.
-- **C0041** (lemma, open, `proofs/C0041_single_row.md`): single-row run lemma —
-  post-onset a witness row covers <= p_c consecutive columns.
-- **C0042** (observation): refutation of the pure-poset route (c=0 line is an
-  antichain of size p*; P-position plane sections reach 459) + the interleave
-  target.
-- **C0043** (observation, population-corrected): heptad anatomy — one witness
-  per column, 7 distinct rows one column each; onset-alignment story refuted.
-- **C0044** (observation, corrected): heptads touch the admissibility boundary
-  (slack 0..2 exist) but are not pinned there (slack up to 9521); sqrt(2)
-  saturation was mostly the filter. Proof must be uniform in slack.
-- **C0028 evidence update**: referee t=0.8 accept_with_gaps; the named gap
-  `p_r | s` proved in Addendum 2.
+- **C0071** (observation): finite reduction — runs = anti-diagonals in Z_72 x heights, exact over all q; descriptor model validated vs solver (216553 cells, 0 mismatches).
+- **C0072** (observation): exact max run 7 at 50k + threshold ladder 0,2,9,11,42,585,18718 (L=1..7); c0 drift is a range effect.
+- **C0073** (observation): near-octad anatomy (8th rung fails by missing value or phase misalignment); distinct witnesses; band width <= 5.
+- **C0074** (observation): band law v = (2-sqrt2)c + O(1) + conservation law u_r + v_r = r + O(1); both saturated at 100k (conservation [-2,6] identical at 50k/100k).
+- **C0075** (observation): phase-injectivity (0 violations to 100k); period-1 value steps in {1..6}.
+- **C0076** (observation): tail value set G and its complement (single/double holes only).
+- **C0077** (observation): sharp integer value law v_c = round((2-sqrt2)c) + {0,1} exact (0 outliers to 100k); F = p1 values + 62 extras.
+- **C0078** (observation): finite reduction consistent with the old hunt_full counts exactly (144 classes x ~525 instances = 75821).
+- **C0079** (observation): rigidity — all 696 heptad classes frozen at length 7; any octad must be a new class at heights > 58580.
+- **C0080** (LEMMA, proved, `proofs/C0080_single_top.md`): same-top valid cells form a matching (row AND column forms); supersedes C0041; upgrades C0043/C0060.
+- **C0081** (observation): falsifier hunt to r=100000 — no octad, c0=7 holds over all q (11861 hexads, 696 heptads).
+- **C0082** (observation, counts corrected): the p1 value sequence is NOT greedily generated (866 dips chose lo while hi free); dip anatomy (both neighbours stale necessary, frac(2 theta c) <= 0.5 nearly necessary).
+- **C0083** (observation): finite dissection — 587 candidate windows at 100k, 36 admit an 8-run under free deltas, 36/36 killed by the real dip pattern; run bound = delta-staircase avoidance. Targets in `scratch/staircase_targets.txt`.
+- **C0084** (observation, 2 addenda): heptad taxonomy (4 all-p1 blocks x 72 phases + 16 mixed tops); +2/+3 phase overshoot (word sparsity explains +-1 absence); isolated-hole law (shape ??01111).
+- **C0085** (observation, precision-corrected): end-of-block mechanism — each block's 8th value sits in a fibre where lo-option rows are stale and the live row declines to dip.
+- **C0086** (observation, THE key structure after C0080): delta_c = F(class word on [c-30,c+30]) — W_30 pure at 100k (39356 groups, 0 mixed), shuffle control non-vacuous, W_29 has 2 counterexamples; addendum: dip windows at stale-run boundaries but no compact predicate suffices.
+- **C0087** (observation): complete dictionary — multi periods W_10-determined; 97 distinct tail signatures; full signature W_35-determined.
+- **C0088** (observation): class-word language — forbidden bigrams PP/MP/MM, trigrams SSM/PSM/MSP, SSSSS; complexity e^{O(sqrt k)}; corrects C0018's "maximal complexity" reading; not an SFT.
+- **C0089** (observation): minimal-flip verdict — obstruction entirely in F's joint dip structure; needed segments language-realizable; all 119 critical mismatches are needed-dip/actual-non-dip.
+- **C0090** (observation, addendum): dip-chain laws — consecutive-SPS dip pairs only at distances 2,3; distance-2 chains <= 3 (kills 14/36 windows); both natural mechanisms refuted.
+- **C0091** (observation, 6 addenda): null-model localization — local rates <= 6 insufficient (octads 30-50% of null trials); R2 oscillates 0.34-2.04, decays beyond index gap ~36, c-gap modulation ~30-40 (window-overlap explanation refuted); triples ~ pairwise; R2_SPS = 1.00 (signal purely P(dip,dip|SPS)); preperiod decomposition refuted.
+- **C0092** (observation, 5 addenda): pair sufficiency — J(k)=log R2(k) surrogate reproduces max-run-7 while local nulls don't; J=0 Bernoulli also avoids octads (thin tail); real word fat tail (7x) capped at 7; exact pattern probability 0.0013/dataset (first octad ~8e7 rows) vs real-tail extrapolation ~6e5 rows (the bracket).
+- **C0093** (observation, 8 addenda): machine selection mechanism — transient-steered drain; H-configuration decisive; ENVELOPE FORMULA k* = max(inj_a+a) - a* + 2 exact; WOBBLE DECOMPOSITION delta = m+s with (m,s) on two lines; wobble components cancel at distance k; extreme contacts don't determine the line (s compensates); scale-verified to c=1124 (QMAX >= 2c pitfall documented).
+- **C0094** (observation, corrected + extended): 2c PEAK LAW max_q f(q,c) = 2c + O(4) (CORRECTED from O(3), sample-limited; +4 occurs ~1% at c=383,626; extension c in [5000,10000] max +2); machine form M = c + O(2); a* = c - v_c + O(4).
+- **Updates to prior claims**: C0003 (strip sup drifted 5.696 -> 5.755 at 100k — "saturated" was range-limited), C0037 (locking K=6 survives to 100k), C0067 (period spectrum unchanged at 100k, lcm 72), C0074 (conservation saturated at 100k).
 
 ## Next step
 
-1. **Do not run the referee.** (Operator, 2026-10-03.) Your shell no longer
-   has the API key, so `harness.referee` will fail, and refereeing your own
-   claims is not your job: the scheduled `referee.yml` runs it daily and
-   C0024, C0028 are next in its queue. C0024 already has a restatement.
-   Spend the session on the mathematics below.
-2. **The 8-run falsifier hunt** (cheapest disproof of C0039): extend the
-   census past r=50000 and re-run `scratch/hunt_full.cpp`; record the max
-   before stating any sharp K. An octad falsifies the absolute-constant
-   conjecture and with it the `N(r) <= K r` route via plug runs.
-3. **The interleave proof** (if no octad): no 8 one-per-row tail-value
-   matches (rows c, values `g_c(q)=q+B_c(q-c)`, one column per row) can cover
-   8 consecutive columns — uniformly in slack (per C0044's correction), with
-   the 75821 heptads as the sharp cases. Attack via SAT/ILP over
-   (period, phase, values) tuples or the mex structure of the tails directly.
-   At c0=7 this yields `N(r) <= 9r` (empirically `N(r) <= 2r`).
+**The proof attempt, in two explicit steps** (all inputs are in the ledger):
+The exact proof targets are pre-computed in `scratch/staircase_targets.txt` (36 windows: fibre rows, needed delta pattern, actual deltas, 119 critical rows where needed=dip/actual=non-dip) — start there, no recomputation needed.
+1. Derive the pair potential `J(k)` (or equivalently the wobble line-choice correlation) from the mex machine's dynamics — the entry point is the H-fill/line-choice: `delta = m + s` where `m = M-c` (envelope contact wobble) and `s` is the settling wobble; measure the joint `(m,s)` statistics at distance k across many rows at 10x scale (the n=80/200 surveys found only structural mirroring + weak even/odd alternation; data: `scratch/census_100000.tsv`; machine sim needs QMAX >= 2c, guard `k* == v_c`).
+2. Prove the staircase patterns (11111000 etc., C0083) have ~zero probability under the resulting J at value-fibre geometries — a finite inequality. Then c0=7, N(r) <= 9r, MISSION full success.
+In parallel: the **5e5-row census** (`GROUND_TRUTH/solver census --rmax 500000`, hours, run in background) decides the octad question AND the absolute-vs-drift question AND measures the 7->8 extension rate. Do NOT spend time on: local correlates (dead), language constraints alone (dead), recomputing the 100k census (preserved), or re-verifying any sampled maximum without recording the sample size.
 
 ## Confidence
 
-High in C0032/C0033/C0041 (algebraic proofs, solver-validated). C0039 is the
-load-bearing conjecture: verified on every datum that exists (complete census,
-zero counterexamples), falsifier precisely defined and cheap, sharp cases
-enumerated. What would kill it: an 8-run in extended tails; note the constant
-has drifted 5->6->7 with range, so do not hard-code 7 in any theorem statement
-beyond "absolute constant (currently 7 on all available data)". C0028's bound
-survived adversarial self-review and one referee pass (accept_with_gaps, gap
-patched); its only remaining risk is referee scrutiny of C0024's (ii)-(iii),
-whose mechanism (Zeilberger's Lemma Bounded) was verified against the source
-this session. Session discipline note: three self-interpretations were
-overturned by population checks (C0043, C0044, c0 constants) — the next
-session should keep testing extremal-example stories on populations before
-building on them.
+High in C0080 (short complete proofs, both forms, 0/175523 violations) and in the finite reduction + dictionary (C0071/86/87: exact, cross-validated, non-vacuous controls). The envelope formula and wobble decomposition are exact on 285+ row-simulations including dips at c~1000 — good evidence but the scale is small; the 2c law is verified to c=10000 (O(4) corrected). What would kill the thesis: (a) an octad anywhere (falsifies the absolute-constant form of C0039 — though N(r) <= (c0(r)+2)r would survive with slow growth); (b) a violation of the wobble two-line structure at larger scale; (c) J(k) failing to derive from the machine (which would leave the strip bound as hard as before, only better informed). The thesis is alive: the reduction chain is complete and every link is exact; the remaining work is algebra on a 2-integer wobble and one census run. Session discipline note: three of my own verdicts were overturned later in the same session (class-word locality, complexity reading, spectrum bug) and one constant was corrected (O(3)->O(4)) — read the dead_ends corrections before trusting any "route is dead" or any maximum, and record sample sizes next to every supremum.

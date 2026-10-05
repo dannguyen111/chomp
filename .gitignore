@@ -16,3 +16,8 @@ GROUND_TRUTH/cache/
 # tests need none of it -- see GROUND_TRUTH/tests/data/SOURCES.md.
 GROUND_TRUTH/data/
 islands/*/scratch/
+# Sheiner's Lean archive is unpublished and was shared privately. It lives
+# in the private repo dannguyen111/chomp-lean, cloned here. Only the
+# README pointing to it is committed.
+GROUND_TRUTH/lean/*
+!GROUND_TRUTH/lean/README.md

@@ -1,5 +1,9 @@
 """Offline tests. No network: the session loop runs against a fake model."""
+import hashlib
 import json
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 
 from harness import prompt, tools
@@ -9,8 +13,41 @@ from harness.orclient import Budget, BudgetExhausted
 ROOT = Path(__file__).parent
 
 
+# No test may write to the real LEDGER/ or BUDGET.json. Four did: the first
+# appended "N(r) <= 2r ..." as a live claim, the third a deliberately corrupt
+# line, the prompt test a claim of its own, and the session test charged its
+# fake spend to the real budget and wrote the real HANDOFF.md. Ledger tests get
+# an empty ledger; anything that needs the real prompts and mission runs on a
+# throwaway copy of the tracked repo.
+
+def _empty_ledger() -> Ledger:
+    return Ledger(Path(tempfile.mkdtemp(prefix="chomp-test-ledger-")))
+
+
+def _sandbox_root() -> Path:
+    """A copy of every tracked file except runs/, in a temp directory."""
+    tmp = Path(tempfile.mkdtemp(prefix="chomp-test-root-"))
+    files = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True,
+                           text=True, check=True).stdout.splitlines()
+    for f in files:
+        if f.startswith("runs/") or not (ROOT / f).is_file():
+            continue
+        (tmp / f).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / f, tmp / f)
+    (tmp / "runs").mkdir(exist_ok=True)
+    return tmp
+
+
+def _real_state() -> str:
+    h = hashlib.sha256()
+    for f in sorted((ROOT / "LEDGER").rglob("*")) + [ROOT / "BUDGET.json"]:
+        if f.is_file():
+            h.update(str(f.relative_to(ROOT)).encode() + f.read_bytes())
+    return h.hexdigest()
+
+
 def test_ledger_append_only_and_last_write_wins():
-    led = Ledger(ROOT / "LEDGER")
+    led = _empty_ledger()
     c = led.add("N(r) <= 2r for all rows of period 2", type="conjecture",
                 evidence="checked r<=10000", verified_range="r<=10000",
                 session="S001")
@@ -25,7 +62,8 @@ def test_ledger_append_only_and_last_write_wins():
 
 
 def test_dependency_validation_and_ids():
-    led = Ledger(ROOT / "LEDGER")
+    led = _empty_ledger()
+    led.add("first claim", session="S001")
     b = led.add("mex structure forces f(q,r) >= q", session="S001")
     assert b.id == "C0002"
     led.add("bound follows", depends_on=[b.id], session="S001")
@@ -38,10 +76,13 @@ def test_dependency_validation_and_ids():
 
 
 def test_malformed_line_survivable():
-    p = ROOT / "LEDGER" / "claims.jsonl"
-    p.open("a").write("{ this is not json\n")
-    led = Ledger(ROOT / "LEDGER")
-    assert len(led.resolved()) >= 2
+    led = _empty_ledger()
+    led.add("one", session="S001")
+    led.add("two", session="S001")
+    with led.path.open("a") as f:
+        f.write("{ this is not json\n")
+    led = Ledger(led.root)
+    assert len(led.resolved()) == 2
     print("  ledger: corrupt line skipped, session survives")
 
 
@@ -109,7 +150,11 @@ def test_tools_clip_runaway_output():
 
 
 def test_prompt_ordering_and_fingerprint():
-    msgs = prompt.build(ROOT, "01-recurrence", "S999")
+    root = _sandbox_root()
+    # The marker used to arrive in the real ledger courtesy of the test above.
+    Ledger(root / "LEDGER").add("mex structure forces f(q,r) >= q",
+                                session="S999")
+    msgs = prompt.build(root, "01-recurrence", "S999")
     system = msgs[0]["content"]
     user = msgs[1]["content"]
     assert "MISSION: Effective Byrnes" in system
@@ -121,11 +166,11 @@ def test_prompt_ordering_and_fingerprint():
     assert marker in user, "ledger content missing from volatile suffix"
     assert marker not in system, "ledger content leaked into cached prefix"
 
-    fp1 = prompt.prefix_fingerprint(ROOT, "01-recurrence")
-    Ledger(ROOT / "LEDGER").add("a new claim churns the ledger", session="S999")
-    fp2 = prompt.prefix_fingerprint(ROOT, "01-recurrence")
+    fp1 = prompt.prefix_fingerprint(root, "01-recurrence")
+    Ledger(root / "LEDGER").add("a new claim churns the ledger", session="S999")
+    fp2 = prompt.prefix_fingerprint(root, "01-recurrence")
     assert fp1 == fp2, "ledger churn must NOT invalidate the cached prefix"
-    fp3 = prompt.prefix_fingerprint(ROOT, "02-renorm")
+    fp3 = prompt.prefix_fingerprint(root, "02-renorm")
     assert fp3 != fp1, "islands must have distinct prefixes"
     print(f"  prompt: prefix {fp1} stable across ledger writes; islands differ")
 
@@ -177,7 +222,8 @@ def test_session_loop_with_fake_model():
     import os
     os.environ.setdefault("OPENROUTER_API_KEY", "test-key")
     try:
-        summary = S.run(ROOT, "01-recurrence", max_output_tokens=20_000,
+        summary = S.run(_sandbox_root(), "01-recurrence",
+                        max_output_tokens=20_000,
                         max_minutes=1, session_spend_cap=0.15)
     finally:
         S.OpenRouter.chat = orig
@@ -275,6 +321,7 @@ def test_referee_asks_again_when_reply_does_not_parse():
 
 
 if __name__ == "__main__":
+    before = _real_state()
     for fn in [
         test_ledger_append_only_and_last_write_wins,
         test_dependency_validation_and_ids,
@@ -291,4 +338,5 @@ if __name__ == "__main__":
     ]:
         print(f"\n{fn.__name__}")
         fn()
+    assert _real_state() == before, "a test wrote to the real LEDGER/ or BUDGET.json"
     print("\nAll harness tests passed.")

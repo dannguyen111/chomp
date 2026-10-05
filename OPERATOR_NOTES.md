@@ -587,8 +587,12 @@ unsolved-problems list.
 
 Two side findings:
 
-- **Sheiner Lemma 2.3(b) has a typo.** It is printed with `=` where the proof
-  needs `!=`.
+- **Sheiner Lemma 2.3(b) has NO typo** (corrected 2026-10-04). The PDF prints
+  `f(t2,s) ≠ p`, and his Lean has `≠` too. The earlier "printed with `=`"
+  note came from a text extraction that drops the slash of `≠`, along with
+  `≤`, `∈` and `∪`. Check symbols against the rendered page, never against
+  extracted text. The C0080 novelty note in `LEDGER/claims.jsonl` still
+  carries the false "a typo" parenthetical. The verdict (KNOWN) stands.
 - **Padhi Conjecture 4.6** (bounded-discrepancy quasi-periodicity of the
   diagonal families, rotation numbers in Q(sqrt 2)) is island 02's target,
   stated independently on 247 cells. Our census is far larger, so C0011's

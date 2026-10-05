@@ -20,8 +20,7 @@ standard library only, and the standard axioms only:
 - f(q,r) is well defined: the encoded P-position exists, is unique and is
   complete (Lemma 2.1);
 - f satisfies the two-branch Brouwer recurrence, including its mex branch;
-- f(q,0..q) are distinct (Lemma 2.3(a)), and Lemma 2.3(b), printed with "="
-  where "≠" is meant;
+- f(q,0..q) are distinct (Lemma 2.3(a)), and Lemma 2.3(b);
 - the diagonal is the column maximum, and f(q,q) > q (Lemma 4.1);
 - every 3×n rectangle has exactly one winning opening move (Theorem 1.1).
 

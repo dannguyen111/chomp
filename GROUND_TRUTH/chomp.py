@@ -200,7 +200,7 @@ def census(rmax: int, alpha: float | None = None, margin: int | None = None,
     Pass rmax=0 to mean "whatever is in the cache file".
     """
     if cache is not None and Path(cache).exists():
-        raw = Path(cache).read_text()
+        raw = Path(cache).read_text(encoding="utf-8")
         return _validate(raw, _parse_census(raw), str(cache), rmax or None)
     args: list[object] = ["census", "--rmax", rmax]
     if alpha is not None:
@@ -217,7 +217,7 @@ def census(rmax: int, alpha: float | None = None, margin: int | None = None,
         dest = Path(cache)
         dest.parent.mkdir(parents=True, exist_ok=True)
         tmp = dest.with_suffix(dest.suffix + ".part")
-        tmp.write_text(txt)
+        tmp.write_text(txt, encoding="utf-8")
         tmp.replace(dest)
     return cen
 

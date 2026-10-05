@@ -30,7 +30,7 @@ ALLOWED_SECTIONS = ("## 1.", "## 2.", "## 3.", "## 4.", "## 6.")
 
 
 def redacted_mission(root: Path) -> str:
-    text = (root / "MISSION.md").read_text()
+    text = (root / "MISSION.md").read_text(encoding="utf-8")
     blocks = re.split(r"\n(?=## \d+\.)", text)
     keep = [b for b in blocks if b.lstrip().startswith(ALLOWED_SECTIONS)]
     return "\n\n".join(keep)
@@ -42,7 +42,7 @@ def build_messages(root: Path, claim, proof: str, deps: dict) -> list[dict]:
         or "(none cited)"
     )
     return [
-        {"role": "system", "content": (root / "prompts" / "referee.md").read_text()},
+        {"role": "system", "content": (root / "prompts" / "referee.md").read_text(encoding="utf-8")},
         {
             "role": "user",
             "content": (
@@ -99,7 +99,7 @@ def attempts(root: Path) -> dict[str, int]:
     if not p.exists():
         return {}
     try:
-        return json.loads(p.read_text())
+        return json.loads(p.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         print("[referee] attempts.json is not valid JSON; treating as empty")
         return {}
@@ -115,7 +115,7 @@ def _restatement(root: Path, claim_id: str) -> str | None:
     if not p.exists():
         return None
     try:
-        return json.loads(p.read_text()).get(claim_id)
+        return json.loads(p.read_text(encoding="utf-8")).get(claim_id)
     except json.JSONDecodeError:
         print(f"[referee] restatements.json is not valid JSON; ignoring it")
         return None
@@ -182,7 +182,7 @@ def _held(root: Path) -> dict[str, str]:
     if not p.exists():
         return {}
     try:
-        return json.loads(p.read_text())
+        return json.loads(p.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         print("[referee] hold.json is not valid JSON; holding nothing")
         return {}
@@ -199,7 +199,7 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     if not ok:
         raise NotRefereeable(f"{claim_id}: {why}")
 
-    proof = (root / why).read_text()
+    proof = (root / why).read_text(encoding="utf-8")
     deps = {d: resolved[d] for d in claim.depends_on if d in resolved}
 
     budget = Budget(root / "BUDGET.json")
@@ -368,12 +368,12 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     name = (f"{claim_id}.json" if final in ("accept", "reject")
             else f"invalid/{claim_id}.{final}.json")
     (out_dir / name).parent.mkdir(parents=True, exist_ok=True)
-    (out_dir / name).write_text(json.dumps(report, indent=2))
+    (out_dir / name).write_text(json.dumps(report, indent=2), encoding="utf-8")
     if final not in ("accept", "reject"):
         tries = attempts(root)
         tries[claim_id] = tries.get(claim_id, 0) + 1
         _attempts_path(root).write_text(json.dumps(tries, indent=2,
-                                                   sort_keys=True) + "\n")
+                                                   sort_keys=True) + "\n", encoding="utf-8")
 
     results = [(v.get("novelty") or {}).get("result") for v in verdicts]
     known = any(r == "already known" for r in results)

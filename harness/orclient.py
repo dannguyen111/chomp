@@ -54,11 +54,11 @@ class Budget:
             self._write({"cap": cap, "spent": 0.0, "calls": 0, "log": []})
 
     def _read(self) -> dict:
-        return json.loads(self.path.read_text())
+        return json.loads(self.path.read_text(encoding="utf-8"))
 
     def _write(self, d: dict) -> None:
         tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(d, indent=2))
+        tmp.write_text(json.dumps(d, indent=2), encoding="utf-8")
         tmp.replace(self.path)  # atomic
 
     @property

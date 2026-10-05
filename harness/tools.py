@@ -193,7 +193,11 @@ def _tool_env() -> dict:
     grade its own work; one agreed accept would have promoted a claim nobody
     independent had read. Nothing a tool call legitimately does needs the key.
     """
-    return {k: v for k, v in os.environ.items() if "OPENROUTER" not in k.upper()}
+    env = {k: v for k, v in os.environ.items() if "OPENROUTER" not in k.upper()}
+    # Child Pythons print UTF-8, which is what dispatch() decodes. On Windows
+    # they would otherwise print in the console code page.
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    return env
 
 
 def dispatch(name: str, args: dict, root: Path, *, sandbox: bool = False) -> str:
@@ -210,6 +214,10 @@ def dispatch(name: str, args: dict, root: Path, *, sandbox: bool = False) -> str
                 cwd=root,
                 capture_output=True,
                 text=True,
+                # A model's script printing one stray byte must not turn a
+                # paid tool call into a UnicodeDecodeError.
+                encoding="utf-8",
+                errors="replace",
                 timeout=timeout,
                 env=_tool_env(),
             )
@@ -223,14 +231,14 @@ def dispatch(name: str, args: dict, root: Path, *, sandbox: bool = False) -> str
             if _protected(root, p):
                 return f"REFUSED: {args['path']} is read-only (see MISSION.md s6)."
             p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(args["content"])
+            p.write_text(args["content"], encoding="utf-8")
             return f"wrote {args['path']} ({len(args['content'])} chars)"
 
         if name == "read_file":
             p = _resolve(root, args["path"])
             if not p.exists():
                 return f"no such file: {args['path']}"
-            lines = p.read_text().splitlines()
+            lines = p.read_text(encoding="utf-8").splitlines()
             s, e = args.get("start"), args.get("end")
             if s or e:
                 lines = lines[(s or 1) - 1 : e or len(lines)]

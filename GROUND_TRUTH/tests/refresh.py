@@ -50,7 +50,7 @@ def main() -> int:
         if r <= 24 and len(vals) == 25 - r:
             tab[r] = vals
     assert set(tab) == set(range(25)), sorted(set(range(25)) - set(tab))
-    with (DATA / "brouwer_table_24.txt").open("w") as f:
+    with (DATA / "brouwer_table_24.txt").open("w", encoding="utf-8") as f:
         f.write("# Brouwer, https://aeb.win.tue.nl/games/chomp.html -- f(q,r), r<=q<=24\n")
         f.write("# one line per r: `r  f(r,r) f(r+1,r) ... f(24,r)`\n")
         for r in range(25):
@@ -61,21 +61,21 @@ def main() -> int:
     seq = [int(x) for x in m.group(1).split()]
     (DATA / "r120_pvalues.txt").write_text(
         "# Brouwer: f(q,120) for q = 120, 121, ...\n"
-        + "\n".join("%d %d" % (120 + i, v) for i, v in enumerate(seq)) + "\n")
+        + "\n".join("%d %d" % (120 + i, v) for i, v in enumerate(seq)) + "\n", encoding="utf-8")
     print(f"  r120_pvalues: {len(seq)} values")
 
     cens = {}
     for p in (2, 3, 4, 9):
         mm = re.search(r"Period %d for r = ([\d,\s]+?)\." % p, t)
         cens[p] = sorted(int(x) for x in mm.group(1).replace(",", " ").split())
-    (DATA / "nivasch_periods.json").write_text(json.dumps(cens, indent=1))
+    (DATA / "nivasch_periods.json").write_text(json.dumps(cens, indent=1), encoding="utf-8")
     print("  nivasch_periods:", {k: len(v) for k, v in cens.items()})
 
     rows = re.findall(r"^\s*(\d+) (\d+) (\d+) ((?:-?\d+ ?)+)$", t, re.M)
     pat = [(int(a), int(b), int(c), [int(x) for x in d.split()])
            for a, b, c, d in rows]
     pat = [p for p in pat if p[2] in (2, 3, 4, 9) and len(p[3]) == p[2]]
-    (DATA / "brouwer_patterns.json").write_text(json.dumps(pat, indent=1))
+    (DATA / "brouwer_patterns.json").write_text(json.dumps(pat, indent=1), encoding="utf-8")
     print(f"  brouwer_patterns: {len(pat)} rows")
     return 0
 

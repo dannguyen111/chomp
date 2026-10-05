@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 def sh(*args: str) -> str:
     try:
         return subprocess.run(args, capture_output=True, text=True,
+                              encoding="utf-8", errors="replace",
                               check=False).stdout.strip()
     except OSError as e:
         return f"(failed: {e})"
@@ -63,7 +64,7 @@ def main(argv=None) -> int:
 
     # --- budget ----------------------------------------------------------
     try:
-        cur = json.load(open("BUDGET.json"))
+        cur = json.load(open("BUDGET.json", encoding="utf-8"))
         spent, cap = float(cur["spent"]), float(cur["cap"])
         line = f"Budget:     {money(spent)} of {money(cap)}"
         if old:

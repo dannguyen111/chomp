@@ -94,7 +94,7 @@ def run(
     transcript = run_dir / "transcript.jsonl"
 
     def log(obj: dict) -> None:
-        with transcript.open("a") as f:
+        with transcript.open("a", encoding="utf-8") as f:
             f.write(json.dumps(obj, default=str) + "\n")
 
     log({"event": "start", "island": island, "session": session_id,
@@ -124,7 +124,7 @@ def run(
             "stopped_on": which,
             "complete": False,
         }
-        (run_dir / "summary.json").write_text(json.dumps(s, indent=2))
+        (run_dir / "summary.json").write_text(json.dumps(s, indent=2), encoding="utf-8")
         return s
 
     while True:
@@ -242,7 +242,7 @@ def run(
 
     summary = write_summary()
     summary["complete"] = True
-    (run_dir / "summary.json").write_text(json.dumps(summary, indent=2))
+    (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     log({"event": "end", **summary})
 
     print("\n" + json.dumps(summary, indent=2))

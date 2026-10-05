@@ -54,7 +54,7 @@ class Ledger:
     def raw(self) -> list[Claim]:
         """Every line, in write order. The full audit trail."""
         out = []
-        for lineno, line in enumerate(self.path.read_text().splitlines(), 1):
+        for lineno, line in enumerate(self.path.read_text(encoding="utf-8").splitlines(), 1):
             line = line.strip()
             if not line:
                 continue
@@ -91,7 +91,7 @@ class Ledger:
         for dep in claim.depends_on:
             if dep not in self.resolved():
                 raise ValueError(f"{claim.id} depends on unknown claim {dep}")
-        with self.path.open("a") as f:
+        with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(asdict(claim), sort_keys=True) + "\n")
         return claim
 
@@ -133,6 +133,6 @@ class Ledger:
 
 def dead_ends(root: str | os.PathLike = "LEDGER") -> str:
     p = Path(root) / "dead_ends.md"
-    if not p.exists() or not p.read_text().strip():
+    if not p.exists() or not p.read_text(encoding="utf-8").strip():
         return "(no dead ends recorded yet)"
-    return p.read_text()
+    return p.read_text(encoding="utf-8")

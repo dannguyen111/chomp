@@ -77,7 +77,7 @@ def build_box(root: Path, claim, out: Path, census=(), statement=None):
 
     if statement:
         claim = replace(claim, statement=statement)
-    m = build_messages(root, claim, (root / why).read_text(), {})
+    m = build_messages(root, claim, (root / why).read_text(encoding="utf-8"), {})
     (out / "REFEREE_PROMPT.md").write_text(
         m[0]["content"] + "\n\n" + "=" * 70 + "\n\n" + m[1]["content"],
         encoding="utf-8")

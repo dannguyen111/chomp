@@ -79,7 +79,7 @@ def test_malformed_line_survivable():
     led = _empty_ledger()
     led.add("one", session="S001")
     led.add("two", session="S001")
-    with led.path.open("a") as f:
+    with led.path.open("a", encoding="utf-8") as f:
         f.write("{ this is not json\n")
     led = Ledger(led.root)
     assert len(led.resolved()) == 2
@@ -251,7 +251,7 @@ def _referee_root(tmp: Path) -> Path:
     (tmp / "prompts").mkdir()
     shutil.copy2(ROOT / "prompts" / "referee.md", tmp / "prompts" / "referee.md")
     (tmp / "isl" / "proofs").mkdir(parents=True)
-    (tmp / "isl" / "proofs" / "p.md").write_text("Proof. Trivial.\n")
+    (tmp / "isl" / "proofs" / "p.md").write_text("Proof. Trivial.\n", encoding="utf-8")
     led = Ledger(tmp / "LEDGER")
     ref = "isl/proofs/p.md"
     led.append(Claim(id="C0001", statement="Lemma.", type="lemma", proof_ref=ref))
@@ -274,10 +274,10 @@ def test_referee_queue_and_dedup():
         assert R.refereeable(root, resolved["C0002"])[0]   # no ledger, no dedup
         assert R.refereeable(root, resolved["C0003"], resolved)[0]
         R._attempts_path(root).parent.mkdir(parents=True)
-        R._attempts_path(root).write_text('{"C0001": 2}')
+        R._attempts_path(root).write_text('{"C0001": 2}', encoding="utf-8")
         assert R.attempts(root) == {"C0001": 2}
         (root / "LEDGER" / "referee" / "hold.json").write_text(
-            '{"C0003": "prior art"}')
+            '{"C0003": "prior art"}', encoding="utf-8")
         ok, why = R.refereeable(root, resolved["C0003"], resolved)
         assert not ok and "prior art" in why, why
     print("  queue: observation deduped onto its lemma, attempts read back")

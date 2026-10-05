@@ -34,7 +34,7 @@ ISLANDS = {
 
 
 def _read(p: Path) -> str:
-    return p.read_text() if p.exists() else ""
+    return p.read_text(encoding="utf-8") if p.exists() else ""
 
 
 def stable_prefix(root: Path, island: str) -> str:
@@ -93,7 +93,7 @@ def assert_stable_prefix(root: Path, island: str) -> None:
     f = root / "runs" / f".prefix-{island}"
     cur = prefix_fingerprint(root, island)
     if f.exists():
-        old = f.read_text().strip()
+        old = f.read_text(encoding="utf-8").strip()
         if old != cur:
             raise SystemExit(
                 f"\nPREFIX CHANGED for {island}: {old} -> {cur}\n"
@@ -101,4 +101,4 @@ def assert_stable_prefix(root: Path, island: str) -> None:
                 f"restabilises. If the edit was deliberate, delete {f} and rerun.\n"
             )
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text(cur)
+    f.write_text(cur, encoding="utf-8")

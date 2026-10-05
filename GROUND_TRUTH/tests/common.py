@@ -27,7 +27,7 @@ def check(cond: bool, msg: str) -> None:
 def oeis(name: str) -> dict[int, int]:
     """{index: term} from a vendored b-file."""
     out = {}
-    for line in (DATA / "oeis" / f"{name}.txt").read_text().splitlines():
+    for line in (DATA / "oeis" / f"{name}.txt").read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue
@@ -41,7 +41,7 @@ def oeis(name: str) -> dict[int, int]:
 def brouwer_table() -> dict[tuple[int, int], int]:
     """{(q,r): f(q,r)} for r <= q <= 24, from aeb.win.tue.nl/games/chomp.html."""
     out = {}
-    for line in (DATA / "brouwer_table_24.txt").read_text().splitlines():
+    for line in (DATA / "brouwer_table_24.txt").read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.startswith("#"):
             continue
         vals = [int(x) for x in line.split()]
@@ -55,7 +55,7 @@ def brouwer_table() -> dict[tuple[int, int], int]:
 def r120_pvalues() -> dict[int, int]:
     """{q: f(q,120)} for q = 120.. as printed by Brouwer."""
     out = {}
-    for line in (DATA / "r120_pvalues.txt").read_text().splitlines():
+    for line in (DATA / "r120_pvalues.txt").read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.startswith("#"):
             continue
         q, p = line.split()
@@ -67,11 +67,11 @@ def r120_pvalues() -> dict[int, int]:
 def nivasch_periods() -> dict[int, list[int]]:
     """{period: [r, ...]} -- Nivasch's census to r = 10000."""
     return {int(k): v for k, v in
-            json.loads((DATA / "nivasch_periods.json").read_text()).items()}
+            json.loads((DATA / "nivasch_periods.json").read_text(encoding="utf-8")).items()}
 
 
 @lru_cache(maxsize=None)
 def brouwer_patterns() -> list[tuple[int, int, int, list[int]]]:
     """[(r, start, period, pattern), ...] -- Brouwer's worked table."""
     return [tuple(x) for x in                       # type: ignore[misc]
-            json.loads((DATA / "brouwer_patterns.json").read_text())]
+            json.loads((DATA / "brouwer_patterns.json").read_text(encoding="utf-8"))]

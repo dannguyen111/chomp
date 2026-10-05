@@ -230,6 +230,10 @@ def test_referee_queue_and_dedup():
         R._attempts_path(root).parent.mkdir(parents=True)
         R._attempts_path(root).write_text('{"C0001": 2}')
         assert R.attempts(root) == {"C0001": 2}
+        (root / "LEDGER" / "referee" / "hold.json").write_text(
+            '{"C0003": "prior art"}')
+        ok, why = R.refereeable(root, resolved["C0003"], resolved)
+        assert not ok and "prior art" in why, why
     print("  queue: observation deduped onto its lemma, attempts read back")
 
 

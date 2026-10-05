@@ -535,3 +535,64 @@ exists.
 **The development is not linked in the paper** -- the only URLs are Brouwer's
 page and the two OEIS entries. So it is either unpublished, an ancillary file,
 or available on request. Worth asking the author before rebuilding it.
+
+---
+
+## 2026-10-04: exploring paused, budget moved to the referee
+
+### Why
+
+Referee runs 13-15 (all MiMo) all went to C0024 and none produced a verdict.
+The auto queue took the lowest id first, and inconclusive runs go to
+`invalid/` on purpose, so C0024 held the front of the line while seventeen
+other refereeable claims waited. The referee has judged two claims ever.
+
+### What changed
+
+- **`session.yml` is disabled** (`gh workflow disable session`). `runs/AUTOPILOT`
+  is untouched because it gates both workflows; the referee cron still runs.
+  Re-enable with `gh workflow enable session`.
+- **Referee harness** (`dcc0354` and the commit after it):
+  - `_parse` takes the last JSON object with a `disposition`. The old greedy
+    regex broke on any `{...}` set written before the verdict.
+  - A pass that ends on an unparseable reply is asked once more, with the
+    tools withdrawn. A verdict that still fails records `_finish_reason` and
+    `_raw_tail`.
+  - `LEDGER/referee/attempts.json` counts runs without a verdict, and the queue
+    is ordered by fewest attempts first.
+  - An observation whose proof file is a lemma's proof is refereed once, as
+    that lemma. 18 eligible claims became 9 proofs.
+  - `LEDGER/referee/hold.json` takes a claim out of the queue, with a reason.
+- **`referee.yml`** commits and pushes after each claim, and its timeout is now
+  350 minutes so a six-claim manual run fits.
+- **Referee model stays MiMo**, at Dan's direction.
+
+### Literature review of the 9 proofs
+
+The ledger evidence has the full note for each, under session
+`operator-novelty-check`. Sources checked: #G07, Sheiner v2, Zeilberger, Byrnes,
+Padhi arXiv:2608.11290v2 section 4 (new, Aug 2026), and the Nowakowski GONC6
+unsolved-problems list.
+
+| claim | verdict | queue |
+|---|---|---|
+| C0024, C0028 | clear: no source gives an effective bound. This is the effective form of Zeilberger's pigeonhole | refereed |
+| C0033 | clear | refereed |
+| C0032 | reformulation of Zeilberger's Fundamental Recurrence, attributed | refereed |
+| C0029 | derivative of #G07 section 8.8, attributed | refereed |
+| C0060 | identity clear. **Premise (P) is #G07 section 8.3 = Sheiner Lemma 4.1, so the lemma is unconditional** | refereed |
+| C0045 | known: Sheiner recurrence (1) at q=r=n | held |
+| C0080 | known: Sheiner Lemma 2.3(a)-(b), #G07 section 8.3 | held |
+| C0041 | weaker than C0080, so weaker than prior art | held |
+
+Two side findings:
+
+- **Sheiner Lemma 2.3(b) has a typo.** It is printed with `=` where the proof
+  needs `!=`.
+- **Padhi Conjecture 4.6** (bounded-discrepancy quasi-periodicity of the
+  diagonal families, rotation numbers in Q(sqrt 2)) is island 02's target,
+  stated independently on 247 cells. Our census is far larger, so C0011's
+  saturation is evidence for it.
+
+Separately, session 30 rewrote C0003 with `novelty_checked: false`, which
+dropped the operator's flag. The note is still in its evidence.

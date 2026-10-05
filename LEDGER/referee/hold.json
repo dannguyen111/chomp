@@ -1,0 +1,5 @@
+{
+  "C0041": "superseded by C0080, which is Sheiner Lemma 2.3(b) (operator novelty check 2026-10-04)",
+  "C0045": "prior art: Sheiner recurrence (1) at q=r=n; #G07 s8.1 (operator novelty check 2026-10-04)",
+  "C0080": "prior art: Sheiner Lemma 2.3(a)-(b); #G07 s8.3 (operator novelty check 2026-10-04)"
+}

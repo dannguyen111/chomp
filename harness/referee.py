@@ -165,7 +165,27 @@ def refereeable(root: Path, claim, resolved: dict | None = None) -> tuple[bool, 
         return False, f"already {claim.status}"
     if (root / "LEDGER" / "referee" / f"{claim.id}.json").exists():
         return False, "already refereed"
+    held = _held(root).get(claim.id)
+    if held:
+        return False, f"held: {held}"
     return True, ref
+
+
+def _held(root: Path) -> dict[str, str]:
+    """Claims the operator has taken out of the queue, with the reason.
+
+    For a lemma already in print (the C0012 lesson): refereeing it spends the
+    budget confirming someone else's theorem. Edit LEDGER/referee/hold.json to
+    release one.
+    """
+    p = root / "LEDGER" / "referee" / "hold.json"
+    if not p.exists():
+        return {}
+    try:
+        return json.loads(p.read_text())
+    except json.JSONDecodeError:
+        print("[referee] hold.json is not valid JSON; holding nothing")
+        return {}
 
 
 def referee(root: Path, claim_id: str, session: str = "referee",

@@ -56,7 +56,11 @@ jobs:
     # 120 minutes, while spending $0.24 of its $0.60 cap. A job killed at the
     # timeout loses the verdict entirely, and the headroom costs nothing unless
     # it is used.
-    timeout-minutes: 180
+    #
+    # Raised from 180 for multi-claim manual runs (2026-10-04): six claims at
+    # 30-50 minutes each. 350 stays under GitHub's 360-minute job ceiling, and
+    # each claim is committed as it finishes, so a timeout costs one verdict.
+    timeout-minutes: 350
 
     steps:
       - uses: actions/checkout@v4
@@ -113,12 +117,37 @@ jobs:
         if: steps.gate.outputs.go == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        # One claim per invocation, committed and pushed as soon as it is done.
+        # A single invocation committed only at the end, so a job killed at the
+        # timeout lost every verdict it had reached. Re-reading the ledger
+        # between claims also lets `auto` see the attempts it just recorded.
         run: |
+          set -uo pipefail
           chmod +x GROUND_TRUTH/solver
-          python -m harness.referee "${{ steps.gate.outputs.claim }}" \
-            --root . \
-            --max-spend "${{ steps.gate.outputs.spend }}" \
-            --max-claims "${{ steps.gate.outputs.claims }}"
+          git config user.name "chomp-harness"
+          git config user.email "noreply@github.com"
+          SPEND="${{ steps.gate.outputs.spend }}"
+          CLAIM="${{ steps.gate.outputs.claim }}"
+          commit() {
+            git add -A BUDGET.json LEDGER
+            git diff --cached --quiet && return 0
+            git commit -q -m "referee ${{ github.run_number }} ($1)"
+            for i in 1 2 3; do
+              git pull --rebase --autostash && git push && return 0
+              sleep $((i * 5))
+            done
+            echo "Push failed after 3 attempts."; return 1
+          }
+          N=1; [ "$CLAIM" = auto ] && N="${{ steps.gate.outputs.claims }}"
+          for i in $(seq 1 "$N"); do
+            REMAIN=$(python -c "import json;d=json.load(open('BUDGET.json'));print(d['cap']-d['spent'])")
+            python -c "import sys;sys.exit(0 if $REMAIN >= $SPEND else 1)" \
+              || { echo "Budget below the per-claim cap; stopping."; break; }
+            python -m harness.referee "$CLAIM" --root . \
+              --max-spend "$SPEND" --max-claims 1 \
+              || echo "referee exited non-zero on pass $i/$N"
+            commit "$CLAIM $i/$N"
+          done
 
       - name: Commit verdicts
         if: always() && steps.gate.outputs.go == 'true'

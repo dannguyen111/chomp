@@ -1,0 +1,59 @@
+{
+  "claim": "C0033",
+  "agreed": true,
+  "final": "unresolved",
+  "sandboxed": true,
+  "restated": null,
+  "ledger_statement": null,
+  "submission_leaks": [
+    "cross-reference C0024",
+    "cross-reference C0032",
+    "cross-reference C0034"
+  ],
+  "escape_attempts_blocked": 2,
+  "spend": 0.1935,
+  "verdicts": [
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": "With H_0 = V'(0) \u222a T_0 = V'(0) (empty trail at a = 0), induction on a in (M) gives k_a = L_a at every step.",
+      "gap_description": "Two steps do not follow as written. (i) Lemma M's 'k_a = L_a for all a' is false at the degenerate cell (r=0,a=0): the machine gives k_0 = mex_0(empty) = 0 (terminates) while L_0 = f(0,0)-0 = 1; the shift identity underlying (FR), mex_+(S)-q = mex_0(S-q), requires q = r+a >= 1 because the mission's mex is over POSITIVE integers. (ii) C0033's step 'B_c is either p_c-periodic (live c) or undefined forever (stale c)' on x >= u_c = N(c)-c invokes N(c) for stale rows, where the mission's N(c) (least q0 of exact periodicity of f(q,c)-q) does not exist at all (for stale c, f(q,c)-q = dconst-q is strictly decreasing, e.g. c=1 gives 2-q), so sigma_r is ill-posed for r >= 2 unless the solver's extended convention (N = 1 + last genuine q = deathq for stale rows) is stated. Both are one-sentence fixes; with them, the componentwise argument is correct and I verified the corrected statements exhaustively.",
+      "counterexample_search": {
+        "range_checked": "Machine (M) vs solver f(q,r)-q: all r <= 250 with a <= 700; all r <= 125 with a <= 2500 (covers the r=120 anomaly as row and as component); selected r <= 606 and r <= 1294 with a <= 1200 (component periods 2 and 4); r in {2028,2029,2030,2752} with a <= 1200 (components of period 2,3,4; q_r = 12). V''(a) = V''(a+q_r) for all a >= sigma_r: same ranges, windows >= 6q_r+500 steps past sigma_r. Component dichotomy (B_c p_c-periodic from u_c / dead from u_c): every c <= 700 to q ~ 2600; anomalous rows c in {120,402,2027,6541,8767,11036,18718,28109,46110} (periods 2,3,4,6,8,9) to q = N(c)+20000. Census arithmetic (sigma_r = max_{c<r}N(c)-r, u_r-sigma_r, sigma_r<r, sigma_r/r->sqrt(2)-1): all r <= 50000. Boundary/degenerate: r=0, r=1, 29289 eventually-constant (stale) rows, r=120 anomaly, terminating 0s of stale rows.",
+        "result": "no counterexample (to C0033 itself)",
+        "counterexample": "C0033 survived every check. However the cited dependency C0032 ('k_a = L_a for all a') is falsified at (r,a)=(0,0): machine k_0 = mex(empty) = 0 vs L_0 = f(0,0) = 1; row 0 then 'terminates' although B_0(x)=1 for all x. The machine reproduces the solver exactly for every r >= 1 tested."
+      },
+      "novelty": {
+        "searched": [
+          "arXiv API query all:chomp (attempted; sandbox refused network access)",
+          "OEIS A029899-A029905/A069001 cross-check via local solver (not a bibliographic search)"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "No computable bound is produced. The constant is written down -- 'sigma_r = max_{c<r} N(c) - r =: M_{r-1} - r' -- but it is defined through the row preperiods N(c), which are exactly the quantities this project exists to make effective and which are only known to exist via Byrnes' non-effective theorem (the 50000-row census values rest on the solver's heuristic --confirm finalization). A person with a calculator cannot evaluate sigma_1000 from the statement of the proof, since certifying N(c) for c < 1000 requires knowing where periodicity sets in for each of those rows. The submission is candid about this: the effective step is left as conjecture ('the right conjecture is an O(1) convergence bound of the machine (M) after determinism onset, which would give N(r) <= max_{c<r} N(c) + K and hence N(r) <= K*r'). So the result is an exact but ineffective onset characterization: it reasserts existence through N(c) rather than producing an evaluable bound on N(r).",
+      "confidence": "medium",
+      "_temperature": 0.3
+    },
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": "Then k_a = L_a and H_a = V'(a) \u222a T_a for all a",
+      "gap_description": "False at (r,a)=(0,0): there V''(0)=V'(0)=T_0=\u2205 so the machine gives k_0 = mex over Z>=0 of \u2205 = 0, but L_0 = B_0(0) = f(0,0)-0 = 1. The mex-over-nonnegatives shift of the recurrence's mex over positive integers silently requires q = r+a >= 1 (0 is invisible to mex-plus but blocking for mex-nonneg). Also sigma_0 = max over the empty set is undefined. Trivially repairable by restricting to r >= 1 (row 0: B_0 = 1, N(0)=0), and none of the large-r content is affected, but the claim as literally stated is false at that point.",
+      "counterexample_search": {
+        "range_checked": "all rows r = 0..300 with all a <= 1200 (machine (M), FR, V''-periodicity-from-sigma_r, stale termination); targeted rows r in {402,403,420,2027,2028,2050} whose component lcm q_r reaches 4 and 12 (period-4 and period-3 components), all a <= 800; census arithmetic N(r)-max_{c<r}N(c), sigma_r/r, sigma_r<t_r for every r <= 50000",
+        "result": "counterexample found",
+        "counterexample": "(r,a) = (0,0) against Lemma M as stated: k_0 = mex(empty) = 0 while L_0 = B_0(0) = 1. This is the only counterexample in the entire sweep; every r >= 1, all tested a, all boundary and stale cases pass. Rows whose q_r contains periods 6, 8, 9 (first components c = 6541, 8767, 11036, 18718) were not machine-tested (table cost); the componentwise argument of Lemma S covers them formally."
+      },
+      "novelty": {
+        "searched": [
+          "arXiv API: chomp AND periodicity (curl refused: sandbox blocks network)",
+          "OEIS search: chomp (curl refused: sandbox blocks network)"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "No computable bound on N(r) is produced. The only constant produced is 'sigma_r = max_{c<r} N(c) - r =: M_{r-1} - r', which is expressed in terms of N(c) - exactly the quantities whose effectivity is the project's open target (Byrnes is non-effective, so N(c) is only known to exist; the r<=50000 census values are heuristic solver confirmations, not theorems). The state-space constant needed to convert autonomy into a bound is asserted without ever being defined or computed: 'the state space is q_r \u00b7 2^{m_r} sets H \u2286 [0, m_r]' - m_r is never given. The submission is honest about this (it defers the O(1) convergence bound to future work and claims only determinism onset), so it does not overclaim, but as written evaluating sigma_r for r=1000 requires the conjectural N(c), and no line turns the finite state space into a bound N(r) <= max_{c<r} N(c) + q_r\u00b72^{m_r} that a calculator could evaluate. In short: the lemma is true and useful, but it is not the effective bound the project targets, and standing alone it reasserts onset in terms of the un-effective N(c).",
+      "confidence": "high",
+      "_temperature": 0.8
+    }
+  ]
+}

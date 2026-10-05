@@ -1,0 +1,60 @@
+{
+  "claim": "C0029",
+  "agreed": true,
+  "final": "unresolved",
+  "sandboxed": true,
+  "restated": null,
+  "ledger_statement": null,
+  "submission_leaks": [
+    "byrnes_audit",
+    "referee",
+    "cross-reference C0003",
+    "cross-reference C0005"
+  ],
+  "escape_attempts_blocked": 1,
+  "spend": 0.1378,
+  "verdicts": [
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": "**`N(r) = q_n + 1` for a stale row** (claim C0005, verified for all 29289 stale rows to `r = 50000`).",
+      "gap_description": "C0005 is stated only as a finite verification, so the universal premise N(r)=q_n+1 is not proved in the text; it is fillable in two lines from the recurrence (f(q_n,r_n)=q_n forces f(q,r_n)=q_n for all q>=q_n via the elif clause, so the last genuine P-position is exactly q_n), but this requires the cited BHMS constant-row property f(q_n,r_n)=q_n and the identification of stale rows with constant rows, neither proved here. Separately, the sole load-bearing inequality q_n <= 3n-1 is outsourced entirely to BHMS 8.8, which I could not check (no network in the sandbox); it is numerically corroborated to n = 58579.",
+      "counterexample_search": {
+        "range_checked": "all r <= 100000 (58579 stale rows, n <= 58579): census recomputed from the solver and diffed byte-identically against census_50000.tsv, then extended to rmax=100000; independent brute-force game tree over every position with p,q,r <= 60 (496/496 cells agree with f, genuine P-position iff f(q,r)>=q); boundary rows r=0,1,2 and anomaly row r=120 checked individually",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "curl https://arxiv.org/abs/math/0502536 (BHMS, On Three-Rowed Chomp, to verify section 8.8) - sandbox refused network",
+          "OEIS A029900 / A029901 / A029902 constant-row sequences - sandbox refused network"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "Effective: the bound is produced at the line \"N(r_n)  =  q_n + 1 (ingredient 3) <=  (3n - 1) + 1  =  3n (ingredient 1) <=  3 r_n (ingredient 2: r_n >= n)\", giving the explicit computable K(r) = 3r with constant 3 from the cited inequality q_n <= 3n-1; no appeal to Byrnes' non-effective eventual periodicity or to any unevaluated existential constant. (Conditional on the BHMS 8.8 citation being accurate, which I could not verify in-sandbox.)",
+      "confidence": "medium",
+      "_temperature": 0.3
+    },
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": "\"N(r_n)  =  q_n + 1                          (ingredient 3)\"  /  \"**N(r) = q_n + 1 for a stale row** (claim C0005, verified for all 29289 stale rows to r = 50000)\"",
+      "gap_description": "Ingredient 3 (N(r_n) = q_n + 1) is the first step not established by proof: it needs the fact that a stale row's constant value is attained exactly at q = the value, i.e. that the mex branch of the recurrence can never kill a row at a value strictly below the diagonal (otherwise the last genuine P-position sits above q_n and N > q_n + 1). The text supplies only numerical verification for this (its own C0005 is labelled 'evidence not proof'); the parenthetical 'the start of the constant row' assumes precisely what needs showing. The gap is fillable \u2014 either from BHMS's constant-row structure or by a short recurrence argument (before the freeze point f(q,r) >= q+1 with pairwise distinct values, and the freeze value is f(q0,r) at the first q0 with f(q0,r) <= q0; one must exclude f(q0,r) < q0). Secondary caveat: BHMS 8.8's q_n <= 3n-1 could not be checked against the source text in this sandbox (network access refused); the citation is numerically consistent and the submission's characterization of q_n (n-th integer not on the diagonal {f(m,m)}) was independently confirmed against the solver.",
+      "counterexample_search": {
+        "range_checked": "all stale rows r <= 100000 (58579 rows, indices n <= 58579), from the complete solver census to r=50000 (cross-checked against an independent 50k recomputation, 0 disagreements) and a complete census to r=100000; plus direct solver-row recomputation of r in {1,3,4,6,8} and the full f-grid for q,r <= 200; boundary cases r=0 (live, out of scope), r=1 (equality case), and 41422 live rows in range (out of scope)",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "https://oeis.org/search?q=id:A029901 (refused by sandbox policy: network blocked, 'novelty is not your call to make here')",
+          "BHMS 'On Three-Rowed Chomp' INTEGERS 5 (2005) #G07 section 8.8 (no network access to source)"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "Effectivity is fine: the bound is explicit and computable, K(r) = 3r, produced at the line \"N(r_n)  =  q_n + 1 ... <= (3n - 1) + 1 = 3n ... <= 3 r_n\" with ingredient 2 \"r_n >= n for all n >= 1\". No dependence on Byrnes' non-effective eventual periodicity and no constant asserted to exist without being computed. Caveat: the chain's input q_n <= 3n-1 is cited from print (BHMS 8.8) rather than re-derived; conditional on that citation, evaluating K(1000) = 3000 is immediate. The submission does not touch live rows (41422 of 100000 checked), so it closes only the stale-row sub-goal (B1), not the full N(r) target.",
+      "confidence": "medium",
+      "_temperature": 0.8
+    }
+  ]
+}

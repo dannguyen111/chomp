@@ -1,0 +1,60 @@
+{
+  "claim": "C0032",
+  "agreed": true,
+  "final": "unresolved",
+  "sandboxed": true,
+  "restated": null,
+  "ledger_statement": null,
+  "submission_leaks": [
+    "cross-reference C0024",
+    "cross-reference C0033",
+    "cross-reference C0034"
+  ],
+  "escape_attempts_blocked": 3,
+  "spend": 0.214,
+  "verdicts": [
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": "With `H_0 = V'(0) \u222a T_0 = V'(0)` (empty trail at `a = 0`), induction on `a` in (M) gives `k_a = L_a` at every step.",
+      "gap_description": "The induction base case fails for r = 0, which the unqualified statement 'Fix the third row r' includes: mex over the non-negative integers of the empty set is k_0 = 0 (declared a stale termination), but L_0 = B_0(0) = f(0,0) = 1 and row 0 is live with B_0 \u2261 1 \u2014 the imported (FR) identity itself fails at (r,a) = (0,0). Restricting both lemmas to r >= 1 (as dependency C0024 already does) repairs this; secondary fillable gaps: the 'deterministic finite machine' conclusion asserts H \u2286 [0,m_r] (hence a q_r\u00b72^{m_r} state space) with no invariant proof (one line: mex(S) <= max(S)+1 keeps H_a \u2286 [0,m_r]), and the stale-row convention N(c) = 1 + last genuine q is used without saying so.",
+      "counterexample_search": {
+        "range_checked": "machine (M) and the FR mex-identity vs the solver for every row r <= 700 with all a <= 300 and every row r <= 300 with all a <= 600 (including all stale rows and their terminating 0), plus rows r = 1000 and 2000 to a = 300; solver cross-checked against an independent brute-force game tree for all positions with q <= 13; Lemma S onset checked for r in {3,5,12,20,60,120,200,300,500,800,1000,2000} over 400 post-onset steps each with q_r = lcm of census periods; C0034 census claim u_r - sigma_r in [-4,6] checked for all r <= 50000; H \u2286 [0,m_r] checked for all r <= 700",
+        "result": "counterexample found",
+        "counterexample": "r = 0 (degenerate row), (r,a) = (0,0): machine/FR give k_0 = mex_0(empty) = 0 and declare the row stale, but f(0,0) = 1, so L_0 = B_0(0) = 1 and row 0 is live with B_0(a) = 1 for all a. No counterexample of any kind for r >= 1: all tested rows reproduce f(q,r)-(q) exactly, all stale deaths land on k = 0 at the correct a, and V'' was q_r-periodic from a = sigma_r in every test with genuine pre-onset failures just before sigma_r. The numerical claim u_r - sigma_r in [-4,6] holds exactly over r <= 50000 (min -4 at r = 25550, max 6)."
+      },
+      "novelty": {
+        "searched": [
+          "arxiv.org (curl) 'Chomp 3 rows merged trail mex machine Zeilberger fundamental recurrence'",
+          "OEIS A029899/A029900/A029901 cross-references 'effective bound preperiod'",
+          "Brouwer Horvath Molnar-Saska Szabo 2005 Chomp algorithm trail recurrence vs merged-trail machine"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "No such line exists in this proof. The proof produces only the determinism onset 'sigma_r = max_{c<r} N(c) - r =: M_{r-1} - r' and a finite state space; its single forward-looking bound is explicitly conjectural: 'which would give N(r) <= K\u00b7r by a one-line induction' \u2014 K is never computed and is conditional on unproven claim C0034. The computable recursion 'N(r)<=r+max(t_r,m_r)+q_r(m_r+1)^{m_r}' appears only in the Results-cited section as dependency C0024 (statement only; its Lemma P is not re-proven here). Conditional on C0024 the right-hand side is computable from the rows c < r, so effectivity of the project goal rides entirely on that dependency; this submission itself reasserts existence and reframes the problem rather than producing an evaluable constant.",
+      "confidence": "medium",
+      "_temperature": 0.3
+    },
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": "With H_0 = V'(0) \u222a T_0 = V'(0) (empty trail at a = 0), induction on a in (M) gives k_a = L_a at every step.",
+      "gap_description": "The induction base is false at (r,a)=(0,0): there V''(0)=V'(0)=T_0=\u2205, so k_0 = mex_{>=0}(\u2205) = 0, but L_0 = B_0(0) = f(0,0) = 1 (ground truth f(0,0)=1, row 0 is live with B_0\u22611). Machine (M) with 'mex over the non-negative integers' therefore spurious-terminates the live row 0 \u2014 equivalently (FR) fails exactly at q=0, because the shift-by-q reduction of mex over positive f-values needs q>=1. One-line repair: state Lemmas M/S for r>=1 (or q>=1) with row 0 (B_0\u22611, N(0)=0) as base case; nothing else in the submission is affected. Second, cosmetic: the validation bullet 'machine (M) reproduces f(r+a,r)-(r+a) exactly, all rows r <= 300' is contradicted at r=0 and should read r=1..300.",
+      "counterexample_search": {
+        "range_checked": "Machine (M) and (FR): every row 0<=r<=424, every a until row termination or a=900; sampled rows r in {500,800,1000,1500,2027} to a=900 and {120,402,2027,6541} (incl. period-2/3/4/9 anomalies) to a=400. Decomposition A = V''(a)\u222aV'(a)\u222aT_a as set identity on 31,626 pairs (r,a) with q<=250 (incl. q=0, stale rows, boundary r=1). Lemma S (V'' q_r-periodic from \u03c3_r) on 17 rows with q_r up to 12. C0024 (i)-(iv) and the final N(r) bound for every r<=500 and at r=2027, 6541. C0034 on the full census r<=50000. Boundary cases r=0, r=1, stale rows (terminating 0 and post-death), eventually-constant (period-1) rows, r=120 anomaly, period-9 row r=6541 all exercised.",
+        "result": "counterexample found",
+        "counterexample": "(r,a)=(0,0): machine (M) yields k_0=0 ('termination') but L_0=B_0(0)=f(0,0)=1; equivalently FR with mex over non-negative integers gives 0 where the true value is 1 at (q,r)=(0,0). This is the only counterexample anywhere in the ranges above: the set-level decomposition held 31,626/31,626, machine (M) matched L_a exactly at every other (r,a) tested (including every stale row's terminating 0), Lemma S had 0 post-onset failures (pre-onset failures confirm \u03c3_r is essentially sharp), C0024 (i)-(iv)+final had 0 failures over all r<=500 plus r=2027,6541 (m_r<=r+1, p_r<=q_r(m_r+1)^{m_r}, u_r<=max(t_r,m_r)+q_r(m_r+1)^{m_r} all hold), and C0034 holds exactly: u_r-\u03c3_r = N(r)-max_{c<r}N(c) ranges over [-4,6] on r<=50000 (min -4 at r=25550, max 6 at r=14298), with \u03c3_r/r -> 0.41422 as claimed."
+      },
+      "novelty": {
+        "searched": [
+          "https://export.arxiv.org/api/query?search_query=all:chomp+AND+all:periodicity",
+          "https://oeis.org/search?q=chomp+3+row&fmt=json"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "Computable, not a reassertion of existence \u2014 but only via the cited dependency C0024, not via Lemma M/S alone. The constant is produced in: '(iii) u_r<=max(t_r,m_r)+q_r(m_r+1)^{m_r}; (iv) q_{r+1}<=q_r^2(r+2)^{r+1}. Hence N(r)<=r+max(t_r,m_r)+q_r(m_r+1)^{m_r} for live rows (stale rows similar with +1)'. Every right-hand quantity is a function of already-solved rows c<r only: m_r=1+max{B_c(a):c<r,a>=0} (max attained in the computable window [0,u_c+p_c) since row c is eventually p_c-periodic from u_c), U_r=max{u_c:c<r}, q_r=lcm{p_c:c<r}, t_r=max(U_r,r); each row's exact (u_c,p_c) is recovered inductively from these same bounds, so there is no circular dependence on any existential quantity, and N(r)<=F(r) for an explicit total computable F. Caveats: (1) F is doubly exponential in r (at r=500 the bound is a 907-digit integer; at r=1000 its decimal expansion has ~2^1000 digits), i.e. effective in the computability sense but not evaluable by hand at r=1000; (2) the derivation of (ii)/(iii) lives in C0024, whose proof is not part of this submission \u2014 I verified its inequalities numerically (0 failures) but could not audit its proof; (3) the submission's own lemmas only set up the machine and the onset \u03c3_r, and the O(r) target is explicitly left as a conjecture (u_r-\u03c3_r=O(1)), correctly not claimed as proven.",
+      "confidence": "high",
+      "_temperature": 0.8
+    }
+  ]
+}

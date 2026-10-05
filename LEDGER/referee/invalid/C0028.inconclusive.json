@@ -4,42 +4,43 @@
   "final": "inconclusive",
   "sandboxed": true,
   "restated": "Let f(q,r) be the unique p such that (p,q,r) is a P-position of 3-row Chomp, defined by the Brouwer recurrence; for each fixed r let N(r) be the least q0 >= r such that the sequence f(q,r)-q is periodic for all q >= q0 (if row r has only finitely many P-positions, i.e. f(q,r) < q for all large q, N(r) is instead the least q with f(q,r) < q). Define a priori sequences g,h by g(1)=1, g(r+1)=g(r)(r+2)^(r+1), and h(r)=11+r+sum_{k=2}^{r} g(k)(k+2)^(k+1). Then for every r>=1, N(r) <= r+h(r), with g(r)=prod_{k=1}^{r-1}(k+2)^{k+1}, so N(r) <= 2^{O(r^2 log r)}. The bound is explicit and computable and no quantity on the right is defined by a recursion over the actual rows.",
-  "ledger_statement": "SHARPER CLOSED FORM: N(r) <= 2^{O(r^2 log r)}. The lcm recursion is LINEAR, not quadratic: q_{r+1} <= q_r (r+2)^{r+1}, because the pigeonhole's repeated state carries the phase a mod q_r, so the repeated-period s satisfies q_r | s AND p_r | s, hence q_{r+1}=lcm(q_r,p_r) | s <= q_r(m_r+1)^{m_r} directly -- no need to multiply (ii)'s p_r bound by q_r. Define g(1)=1, g(r+1)=g(r)(r+2)^(r+1), h(1)=12, h(r)=1+h(r-1)+g(r)(r+2)^(r+1). Then q_r <= g(r), u_r=N(r)-r <= h(r), so N(r) <= r+h(r) = r+11+r+sum_{k=2}^r g(k)(k+2)^(k+1) with g(r)=prod_{k=1}^{r-1}(k+2)^{k+1}, log2 g(r) ~ (r^2/2) log2 r. Improves C0027's 2^{2^{O(r)}} to 2^{O(r^2 log r)}. Sharpening to C*r remains open (discrepancy question).",
+  "ledger_statement": "SHARPER CLOSED FORM: N(r) <= 2^{O(r^2 log r)}. The lcm recursion is LINEAR, not quadratic: q_{r+1} <= q_r (r+2)^{r+1}, because the pigeonhole's repeated state carries the phase a mod q_r, so the repeated-period s satisfies q_r | s AND p_r | s, hence q_{r+1}=lcm(q_r,p_r) | s <= q_r(m_r+1)^{m_r} directly. Define g(1)=1, g(r+1)=g(r)(r+2)^(r+1), h(1)=12, h(r)=1+h(r-1)+g(r)(r+2)^(r+1). Then q_r <= g(r), u_r=N(r)-r <= h(r), so N(r) <= r+h(r) = r+11+r+sum_{k=2}^r g(k)(k+2)^(k+1) with g(r)=prod_{k=1}^{r-1}(k+2)^(k+1), log2 g(r) ~ (r^2/2) log2 r. Improves C0027's 2^{2^{O(r)}} to 2^{O(r^2 log r)}. Sharpening to C*r remains open (discrepancy / C0037 locking question).",
   "submission_leaks": [
     "island",
     "referee",
     "cross-reference C0012",
     "cross-reference C0024"
   ],
-  "escape_attempts_blocked": 0,
-  "spend": 0.0933,
+  "escape_attempts_blocked": 3,
+  "spend": 0.145,
   "verdicts": [
     {
       "disposition": "inconclusive",
       "gap_description": "no parseable verdict: the referee did not finish. This is a harness failure and says nothing about the claim.",
       "confidence": "none",
+      "_finish_reason": "stop",
+      "_raw_tail": "oefficients; the corrected subtraction-closure argument in the same addendum is the valid one (needs T shown to contain the gcd via the standard well-ordering step). Neither gap is load-bearing.\",\n  \"counterexample_search\": {\n    \"range_checked\": \"all r <= 50000 (complete census): N(r) <= r + h(r), m_r <= r+1 on periodic parts, (ii) and (iii) of Input 2 in log space; ~100,931 values f(q,r) with q in [r, min(3r+50,60000)] for r in {0..59, 100, 120, 200, 300, 500, 777, 1000, 2000, 5000, 10000, 20000, 50000} for C0012 (f(q,r) <= q+r+1, bound attained exactly); exact m_r incl. preperiod maxima and exact u_r for all r <= 400 against (iii); stale-row definition cross-check (least q with f(q,r)<q vs census N) for r in {1,3,4,7,8,10,50,123,500,1000}; boundary rows r=0 (f(q,0)=q+1, period 1), r=1 (stale, N=3), r=2; r=120 anomaly (period 2, dvals 72,70, N=170)\",\n    \"result\": \"no counterexample\",\n    \"counterexample\": null\n  },\n  \"novelty\": {\n    \"searched\": [\"arXiv API query for chomp + periodicity (refused: no network access in sandbox)\", \"OEIS search (refused: no network access)\", \"cross-check against supplied literature record: Byrnes 2003 (non-effective periodicity), Brouwer-Horvath-Molnar-Saska-Szabo 2005, Sheiner 2026 (three-row uniqueness, different result)\"],\n    \"result\": \"inconclusive\",\n    \"reference\": null\n  },\n  \"effectivity_check\": \"Fully computable; no circular quantity. The constant is produced in closed form in the Claim and Section 2-3: \"g(1)=1, g(r+1)=g(r)\u00b7(r+2)^(r+1)\" and \"h(1)=12, h(r)=1+h(r-1)+g(r)(r+2)^(r+1)\", equivalently \"h(r) = 11 + r + sum_{k=2}^{r} g(k)(k+2)^(k+1)\", so N(r) <= r + h(r) is an explicit function of r alone (verified: g(12) is exactly 74 digits, matching the submission). The inductive input (iii) bounds u_r only through t_r = max(max_{c<r} u_c, r), q_r and m_r, all computed from rows c < r \u2014 no appeal to Byrnes's non-effective periodicity, and N(r) = O(20713) at r = 50000 evaluates far under the bound.\",\n  \"confidence\": \"medium\"\n}\n```",
       "_temperature": 0.3
     },
     {
       "disposition": "accept_with_gaps",
-      "first_gap_line": "Hence s is a period of the (eventually periodic) row-r sequence, so the fundamental period divides it: p_r | s.",
-      "gap_description": "The step is true but unproved: s is a period of the tail from a1 only, and 'p_r | s' needs the standard least-period argument (on the common tail both p_r- and s-periodicity hold, so gcd(p_r,s) is a period of a further tail, whence p_r | gcd(p_r,s) and p_r | s). A second, later omission: Lemma C' says 'Identical to the companion proof' and never discharges the base case r=1 or the c=0 term (h(0) undefined); this is fillable and I verified it \u2014 (iii) at r=1 gives u_1 <= 1+max(t_1=1,m_1=2)+q_1(m_1+1)^m_1 = 12 = h(1), and in fact N(1)=3 so u_1=2. Both gaps are cosmetic; the load-bearing Lemma A' (phase in the state forces the repeat distance to be a common multiple of q_r and p_r, so q_{r+1} | s <= q_r(m_r+1)^m_r) is correct given the stated inputs C0012/C0024, and the unrolling into g,h is a well-founded induction with no existential quantity left on the right-hand side.",
+      "first_gap_line": "by induction u_c <= h(c) for c < r and h is increasing, so t_r <= max(h(r-1), r)",
+      "gap_description": "At r=1 the induction invokes h(0), which is undefined (h is only defined for r>=1), and u_0 is never bounded, so the base case u_1 <= h(1) is not actually proved. It is fillable in two lines: row 0 has B_0 = 1 identically, so u_0 = 0, q_1 = 1, m_1 = 2, and (iii) gives u_1 <= 1 + max(1,2) + 1*3^2 = 12 = h(1) (solver confirms u_1 = 2). A second fillable slip: Addendum 2's application says the tail is purely periodic on [a1,infty) with least period p_r, but the suffix argument covers only a1 >= u_r; for a1 < u_r one must apply the periods-group lemma on [u_r, infty), where both p_r- and s-periodicity hold.",
       "counterexample_search": {
-        "range_checked": "full f(q,r) grid q <= 1200, r <= 200; census of all rows r <= 50000 (period, preperiod N, dvals, stale deathq/dconst); spot rows r = 0,1,2,3,120,11036,18718,28109,46110,49999,50000",
+        "range_checked": "all rows r <= 50000 via validated census (N-definitions, (ii), (iii), Lemma A' inequality q_{r+1}<=q_r(m_r+1)^{m_r}); full solver grid q <= 5000, r <= 2100 (C0012 value bound); exact state-machine determinism with exact m_r windows at 71 rows (r=1..59, 60,70,...,240); direct Lemma A' step (repeated state, q_r|s, p_r|s, lcm(q_r,p_r)|s, s-periodicity) at r in {2,5,120,402,2027}, including the first rows of periods 2, 3 and 4 (r=2027: q_r=4, p_r=3, observed s=12); degenerate/stale rows r=0,1,3,4,6,8,240 and anomaly r=120",
         "result": "no counterexample",
         "counterexample": null
       },
       "novelty": {
         "searched": [
-          "arXiv API: all:\"chomp\"",
-          "OEIS: chomp preperiod",
-          "OEIS: A029899 A029900 preperiod bound",
-          "arXiv: Byrnes poset game periodicity effective bound"
+          "arXiv API: all:\"chomp\" AND all:\"period\"",
+          "oeis.org search: chomp 3 row",
+          "web search: effective bound preperiod Chomp 3-row P-positions Byrnes periodicity"
         ],
         "result": "inconclusive",
         "reference": null
       },
-      "effectivity_check": "Effective. The bound is produced by explicit a-priori recursions on r alone: 'g(1) = 1, g(r+1) = g(r) \u00b7 (r+2)^{r+1}' and 'h(1) = 12, h(r) = 1 + h(r-1) + g(r) (r+2)^{r+1} (r >= 2)', closed as 'h(r) = 11 + r + sum_{k=2}^{r} g(k) (k+2)^{k+1}', yielding 'N(r) <= r + h(r) <= 2^{O(r^2 log r)}'. I reproduced the closed form exactly (h(1..6) = 12, 589, 360590, 2799720591, 329344704360592, 690680363344289640593 matches the recursion). The recursion-dependent quantities t_r = max(max_{c<r} u_c, r) and u_c are eliminated by a well-founded induction on r into h; no quantity known only to exist appears on the right, and the bound is evaluable for r = 1000 (in log space) from the statement alone. Sub-claims checked against the solver: f(q,r) <= q+r+1 (C0012) holds with tight slack at the diagonal for q<=1200, r<=200; m_r <= r+1 holds; Input-2 (iii) and Lemma A' inequality hold for all r<=200; stale-row convention N(r)=least q with f(q,r)<q matches the oracle for r<=200; live-row dvals and minimality of N under the q0>=r convention hold for r<=200; the r=120 anomaly (period 2, dvals 72,70) and the newer period-6/8 rows (r=11036, 18718, 28109, 46110) are consistent with the claim, which asserts nothing about periods. Note: the census to r=50000 shows periods 6 and 8 appear beyond Nivasch's r<=10000 range, which is irrelevant to this claim.",
+      "effectivity_check": "Effective. The bound is produced by explicit a priori recursions quoted in the proof: \"g(1) = 1, g(r+1) = g(r) (r+2)^{r+1}\" and \"h(1) = 12, h(r) = 1 + h(r-1) + g(r)(r+2)^{r+1}\", giving the closed form h(r) = 11 + r + sum_{k=2}^{r} g(k)(k+2)^{k+1} = 2^{Theta(r^2 log r)}. No quantity on the right is defined via the actual rows (m_r <= r+1 comes from cited C0012; q_r <= g(r) from Lemma A'+B'), and no circular appeal to Byrnes' non-effective periodicity occurs: the pigeonhole itself proves the tail periodicity, so N(r) <= r + h(r) is computable for r = 1000 by a person with the statement alone.",
       "confidence": "high",
       "_temperature": 0.8
     }

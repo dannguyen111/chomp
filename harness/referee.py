@@ -57,13 +57,52 @@ def build_messages(root: Path, claim, proof: str, deps: dict) -> list[dict]:
 
 
 def _parse(text: str) -> dict | None:
-    m = re.search(r"\{.*\}", text, re.S)
-    if not m:
-        return None
+    """The last JSON object in the reply that carries a `disposition`.
+
+    This used to be one greedy `\\{.*\\}`, which spans from the FIRST brace in
+    the reply to the last. A referee that writes a set -- `{f(a,n): a<n}` --
+    anywhere before its verdict put a brace in front of the JSON and made the
+    whole reply unparseable, i.e. `inconclusive`. In a paper about sets of
+    P-positions that is most replies.
+    """
+    dec = json.JSONDecoder()
+    found = None
+    for m in re.finditer(r"\{", text):
+        try:
+            obj, _ = dec.raw_decode(text, m.start())
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict) and "disposition" in obj:
+            found = obj
+    return found
+
+
+FORCE_VERDICT = ("[HARNESS] Stop. Emit your JSON verdict now, this turn, and "
+                 "nothing else. If you did not finish, say so in "
+                 "gap_description and set confidence low -- do not reject a "
+                 "claim you did not manage to check.")
+
+
+def _attempts_path(root: Path) -> Path:
+    return root / "LEDGER" / "referee" / "attempts.json"
+
+
+def attempts(root: Path) -> dict[str, int]:
+    """Runs per claim that ended without a verdict (inconclusive or split).
+
+    The auto queue is ordered by this, fewest first. Before it existed the
+    queue was ordered by id alone, and a claim that never got a verdict stayed
+    at the head forever: C0024 took referee runs 13, 14 and 15 while seventeen
+    other claims waited behind it.
+    """
+    p = _attempts_path(root)
+    if not p.exists():
+        return {}
     try:
-        return json.loads(m.group(0))
+        return json.loads(p.read_text())
     except json.JSONDecodeError:
-        return None
+        print("[referee] attempts.json is not valid JSON; treating as empty")
+        return {}
 
 
 def _restatement(root: Path, claim_id: str) -> str | None:
@@ -82,11 +121,15 @@ def _restatement(root: Path, claim_id: str) -> str | None:
         return None
 
 
+def _ref(claim) -> str:
+    return claim.proof_ref.split(" (")[0].strip()      # tolerate "path (NOTE)"
+
+
 class NotRefereeable(Exception):
     """The claim cannot be judged yet. Not an error -- a skip."""
 
 
-def refereeable(root: Path, claim) -> tuple[bool, str]:
+def refereeable(root: Path, claim, resolved: dict | None = None) -> tuple[bool, str]:
     """Can this claim be put in front of the referee right now?
 
     A claim is judged on a PROOF. Several claims carry a `proof_ref` that points
@@ -97,12 +140,25 @@ def refereeable(root: Path, claim) -> tuple[bool, str]:
     the bar is: a `lemma`, or a file written deliberately as a proof (under a
     `proofs/` directory). Observations are validated by the solver and their
     `verified_range`, not by an adversarial reader.
+
+    Given the ledger (`resolved`), an observation whose proof file is also the
+    proof of a lemma is skipped: the lemma is what that file sets out to prove,
+    so it is refereed once, as the lemma. Ten observations point at
+    C0045_reduction.md, and one of them (C0066) is a list of proof targets --
+    not a statement a proof could establish, so a referee would reject it and
+    it would be marked `refuted`.
     """
     if not claim.proof_ref:
         return False, "no proof_ref"
-    ref = claim.proof_ref.split(" (")[0].strip()      # tolerate "path (NOTE)"
+    ref = _ref(claim)
     if claim.type != "lemma" and "/proofs/" not in ref.replace("\\", "/"):
         return False, f"{claim.type} backed by evidence, not a proof: {ref}"
+    if claim.type != "lemma" and resolved:
+        owner = next((c.id for c in sorted(resolved.values(), key=lambda c: c.id)
+                      if c.type == "lemma" and c.proof_ref and _ref(c) == ref),
+                     None)
+        if owner:
+            return False, f"{ref} is refereed as the proof of lemma {owner}"
     if not (root / ref).exists():
         return False, f"proof file missing: {ref}"
     if claim.status in ("proven", "refuted", "superseded"):
@@ -119,7 +175,7 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     claim = resolved.get(claim_id)
     if claim is None:
         raise SystemExit(f"no such claim {claim_id}")
-    ok, why = refereeable(root, claim)
+    ok, why = refereeable(root, claim, resolved)
     if not ok:
         raise NotRefereeable(f"{claim_id}: {why}")
 
@@ -161,6 +217,7 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     submitted = replace(claim, statement=restated) if restated else claim
 
     TURNS = 40
+    forcing = False
     for temp in (0.3, 0.8):
         messages = build_messages(root, submitted, proof, deps)
         # The referee gets tools so it can actually hunt counterexamples.
@@ -174,12 +231,7 @@ def referee(root: Path, claim_id: str, session: str = "referee",
             if forcing:
                 print(f"[referee] forcing a verdict "
                       f"({'spend cap' if left > 2 else 'out of turns'}).")
-                messages.append({"role": "user", "content":
-                                 "[HARNESS] Stop. Emit your JSON verdict now, "
-                                 "this turn, and nothing else. If you did not "
-                                 "finish, say so in gap_description and set "
-                                 "confidence low -- do not reject a claim you "
-                                 "did not manage to check."})
+                messages.append({"role": "user", "content": FORCE_VERDICT})
             elif left <= 6:
                 messages.append({"role": "user", "content":
                                  f"[HARNESS] {left} turns left. Stop starting "
@@ -227,6 +279,20 @@ def referee(root: Path, claim_id: str, session: str = "referee",
                 })
 
         v = _parse(reply.text)
+        if v is None and not forcing:
+            # The loop above forces a verdict only when turns or spend run
+            # out. Referee runs 14 and 15 (MiMo, C0024) ended neither way: the
+            # model stopped calling tools and replied with something that did
+            # not parse, and that was taken as the end of the pass. Ask once,
+            # with the tools withdrawn, before calling it inconclusive.
+            print(f"[referee t={temp}] no parseable verdict "
+                  f"(finish_reason={reply.finish_reason!r}); asking once more.")
+            messages.append({"role": "user", "content": FORCE_VERDICT})
+            reply = client.chat(messages, model=REFEREE_MODEL, tools=None,
+                                temperature=temp, reasoning_effort="xhigh",
+                                tag=f"referee/{claim_id}/t{temp}")
+            messages.append({"role": "assistant", "content": reply.text})
+            v = _parse(reply.text)
         if v is None:
             # NOT a reject. A referee that never produced a verdict has said
             # nothing about the mathematics, and mapping that to `reject` --
@@ -235,7 +301,11 @@ def referee(root: Path, claim_id: str, session: str = "referee",
             v = {"disposition": "inconclusive", "gap_description":
                  "no parseable verdict: the referee did not finish. This is a "
                  "harness failure and says nothing about the claim.",
-                 "confidence": "none"}
+                 "confidence": "none",
+                 # What the model actually sent, so the next failure can be
+                 # diagnosed from the verdict file instead of guessed at.
+                 "_finish_reason": reply.finish_reason,
+                 "_raw_tail": reply.text[-2000:]}
         v["_temperature"] = temp
         verdicts.append(v)
         print(f"[referee t={temp}] {v.get('disposition')} -- "
@@ -279,6 +349,11 @@ def referee(root: Path, claim_id: str, session: str = "referee",
             else f"invalid/{claim_id}.{final}.json")
     (out_dir / name).parent.mkdir(parents=True, exist_ok=True)
     (out_dir / name).write_text(json.dumps(report, indent=2))
+    if final not in ("accept", "reject"):
+        tries = attempts(root)
+        tries[claim_id] = tries.get(claim_id, 0) + 1
+        _attempts_path(root).write_text(json.dumps(tries, indent=2,
+                                                   sort_keys=True) + "\n")
 
     results = [(v.get("novelty") or {}).get("result") for v in verdicts]
     known = any(r == "already known" for r in results)
@@ -332,12 +407,19 @@ def main() -> None:
 
     if a.list or a.claim_id == "auto":
         ready, skipped = [], []
-        for c in sorted(led.resolved().values(), key=lambda c: c.id):
-            ok, why = refereeable(root, c)
+        resolved = led.resolved()
+        tries = attempts(root)
+        for c in sorted(resolved.values(), key=lambda c: c.id):
+            ok, why = refereeable(root, c, resolved)
             (ready if ok else skipped).append((c.id, c.status, c.type, why))
-        print(f"refereeable now ({len(ready)}):")
+        # Fewest failed attempts first, then id: a claim the referee cannot
+        # finish goes to the back of the line instead of holding the front.
+        ready.sort(key=lambda r: (tries.get(r[0], 0), r[0]))
+        print(f"refereeable now ({len(ready)}), in queue order:")
         for cid, st, ty, ref in ready:
-            print(f"  {cid}  {st}/{ty}  {ref}")
+            n = tries.get(cid, 0)
+            print(f"  {cid}  {st}/{ty}  {ref}"
+                  + (f"  ({n} run{'s' * (n != 1)} without a verdict)" if n else ""))
         if a.list:
             print(f"\nnot yet ({len(skipped)}):")
             for cid, st, ty, why in skipped:

@@ -188,6 +188,88 @@ def test_session_loop_with_fake_model():
           f"handoff written, budget respected")
 
 
+def test_referee_parse_survives_braces_in_prose():
+    """A set written before the verdict must not hide the verdict."""
+    from harness.referee import _parse
+    text = ('Checked R_n = {f(n,b): b<n} against the census.\n```json\n'
+            '{"disposition": "accept", "novelty": {"result": "novel"}}\n```')
+    v = _parse(text)
+    assert v and v["disposition"] == "accept", v
+    assert _parse("The set {1,2,3} is all I have.") is None
+    print("  parse: verdict found past a brace in prose")
+
+
+def _referee_root(tmp: Path) -> Path:
+    import shutil
+    shutil.copy2(ROOT / "MISSION.md", tmp / "MISSION.md")
+    (tmp / "prompts").mkdir()
+    shutil.copy2(ROOT / "prompts" / "referee.md", tmp / "prompts" / "referee.md")
+    (tmp / "isl" / "proofs").mkdir(parents=True)
+    (tmp / "isl" / "proofs" / "p.md").write_text("Proof. Trivial.\n")
+    led = Ledger(tmp / "LEDGER")
+    ref = "isl/proofs/p.md"
+    led.append(Claim(id="C0001", statement="Lemma.", type="lemma", proof_ref=ref))
+    led.append(Claim(id="C0002", statement="Targets.", type="observation",
+                     proof_ref=ref))
+    led.append(Claim(id="C0003", statement="Other.", type="lemma",
+                     proof_ref=ref + " (section 2)"))
+    return tmp
+
+
+def test_referee_queue_and_dedup():
+    """One referee pass per proof file; claims that keep failing go last."""
+    import tempfile
+    from harness import referee as R
+    with tempfile.TemporaryDirectory() as d:
+        root = _referee_root(Path(d))
+        resolved = Ledger(root / "LEDGER").resolved()
+        ok, why = R.refereeable(root, resolved["C0002"], resolved)
+        assert not ok and "C0001" in why, why
+        assert R.refereeable(root, resolved["C0002"])[0]   # no ledger, no dedup
+        assert R.refereeable(root, resolved["C0003"], resolved)[0]
+        R._attempts_path(root).parent.mkdir(parents=True)
+        R._attempts_path(root).write_text('{"C0001": 2}')
+        assert R.attempts(root) == {"C0001": 2}
+    print("  queue: observation deduped onto its lemma, attempts read back")
+
+
+def test_referee_asks_again_when_reply_does_not_parse():
+    """Runs 14-15: the model stopped with prose. One forced retry, no tools."""
+    import os
+    import tempfile
+    from harness import make_refbox
+    from harness import referee as R
+    from harness.orclient import Reply
+
+    seen = []
+
+    def fake_chat(self, messages, **kw):
+        seen.append(kw.get("tools"))
+        forced = messages[-1]["content"] == R.FORCE_VERDICT
+        text = ('{"disposition": "accept", "confidence": "high"}' if forced
+                else "I believe the set {a: a<n} works, so I am done.")
+        self.budget.charge(0.01, kw.get("tag", ""))
+        return Reply(text, [], 0.01, 10, 10, 0, "stop")
+
+    orig_chat, orig_box = R.OpenRouter.chat, make_refbox.build_box
+    R.OpenRouter.chat = fake_chat
+    make_refbox.build_box = lambda root, claim, box, **kw: (box, [])
+    os.environ.setdefault("OPENROUTER_API_KEY", "test-key")
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            root = _referee_root(Path(d))
+            report = R.referee(root, "C0001", max_spend=0.50)
+            assert report["final"] == "accept", report
+            assert (root / "LEDGER" / "referee" / "C0001.json").exists()
+            assert Ledger(root / "LEDGER").resolved()["C0001"].status == "proven"
+            assert not R._attempts_path(root).exists()
+    finally:
+        R.OpenRouter.chat, make_refbox.build_box = orig_chat, orig_box
+    # Per pass: one call with tools, then the retry without them.
+    assert seen == [R.tools.SCHEMA, None, R.tools.SCHEMA, None], seen
+    print("  referee: unparseable reply -> one tool-less retry -> verdict")
+
+
 if __name__ == "__main__":
     for fn in [
         test_ledger_append_only_and_last_write_wins,
@@ -199,6 +281,9 @@ if __name__ == "__main__":
         test_prompt_ordering_and_fingerprint,
         test_budget_hard_cap,
         test_session_loop_with_fake_model,
+        test_referee_parse_survives_braces_in_prose,
+        test_referee_queue_and_dedup,
+        test_referee_asks_again_when_reply_does_not_parse,
     ]:
         print(f"\n{fn.__name__}")
         fn()

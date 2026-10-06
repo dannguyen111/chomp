@@ -1,0 +1,32 @@
+{
+  "claim": "C0028",
+  "agreed": true,
+  "final": "accept",
+  "sandboxed": true,
+  "reconstructed_from_log": true,
+  "source_run": "https://github.com/dannguyen111/chomp/actions/runs/37401077303",
+  "judged_commit": "1e94acfc95f000230262d418ab48c8975e01b4e3",
+  "why_reconstructed": "Referee run 19 reached an agreed accept and promoted C0028, then its push failed on a rebase conflict in LEDGER/claims.jsonl (operator commits landed mid-run), so the verdict file and its BUDGET.json entries were lost. Recorded 2026-10-06 by the operator from the run log; the judged commit contains the current proof file and restatement unchanged.",
+  "restated": true,
+  "submission_leaks": [
+    "cross-reference C0012",
+    "cross-reference C0024"
+  ],
+  "escape_attempts_blocked": 3,
+  "spend": null,
+  "verdicts": [
+    {
+      "disposition": "accept",
+      "_temperature": 0.3,
+      "gap_description": "",
+      "_log_line": "[referee t=0.3] accept -- "
+    },
+    {
+      "disposition": "accept",
+      "_temperature": 0.8,
+      "gap_description": "No non-following step found. The four weak points of the original writeup (stale-row pigeonhole, false '12 > r ... [truncated in the log]",
+      "_log_line": "[referee t=0.8] accept -- No non-following step found. The four weak points of the original writeup (stale-row pigeonhole, false '12 > r"
+    }
+  ],
+  "lost": "full verdict JSON: confidence, counterexample ranges, novelty fields, gap detail beyond the log line"
+}

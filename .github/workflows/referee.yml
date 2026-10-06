@@ -57,9 +57,10 @@ jobs:
     # timeout loses the verdict entirely, and the headroom costs nothing unless
     # it is used.
     #
-    # Raised from 180 for multi-claim manual runs (2026-10-04): six claims at
-    # 30-50 minutes each. 350 stays under GitHub's 360-minute job ceiling, and
-    # each claim is committed as it finishes, so a timeout costs one verdict.
+    # Raised from 180 for multi-claim manual runs (2026-10-04). 350 stays under
+    # GitHub's 360-minute job ceiling. Run 16 measured 65-85 minutes a claim,
+    # so about four fit; the loop below stops starting claims at 260 minutes
+    # rather than letting the timeout kill one mid-proof.
     timeout-minutes: 350
 
     steps:
@@ -139,7 +140,16 @@ jobs:
             echo "Push failed after 3 attempts."; return 1
           }
           N=1; [ "$CLAIM" = auto ] && N="${{ steps.gate.outputs.claims }}"
+          # Claims took 65-85 minutes each in run 16, not the 30-50 this job
+          # was sized for, and the 350-minute timeout killed claim 5 of 6
+          # mid-proof. Do not start a claim that cannot finish: stop once
+          # less than 90 minutes remain.
+          START=$(date +%s)
           for i in $(seq 1 "$N"); do
+            ELAPSED=$(( ($(date +%s) - START) / 60 ))
+            if [ "$ELAPSED" -gt 260 ]; then
+              echo "${ELAPSED} minutes in; not starting claim $i/$N."; break
+            fi
             REMAIN=$(python -c "import json;d=json.load(open('BUDGET.json'));print(d['cap']-d['spent'])")
             python -c "import sys;sys.exit(0 if $REMAIN >= $SPEND else 1)" \
               || { echo "Budget below the per-claim cap; stopping."; break; }
@@ -157,7 +167,7 @@ jobs:
           git config user.email "noreply@github.com"
           git add -A BUDGET.json LEDGER
           git diff --cached --quiet && exit 0
-          git commit -m "referee ${{ github.run_number }} (${{ inputs.claim_id }})"
+          git commit -m "referee ${{ github.run_number }} (${{ steps.gate.outputs.claim }})"
           for i in 1 2 3; do
             git pull --rebase --autostash && git push && exit 0
             sleep $((i * 5))
@@ -169,7 +179,10 @@ jobs:
         run: |
           for f in LEDGER/referee/*.json; do
             [ -f "$f" ] || continue
+            # attempts.json and hold.json live here too and are not verdicts;
+            # reading `claim` from them failed run 17 after its verdict landed.
+            case "$(basename "$f")" in attempts.json|hold.json) continue;; esac
             { echo "### $(basename "$f" .json)"; echo '```json'
-              python -c "import json,sys;d=json.load(open(sys.argv[1]));print(json.dumps({k:d[k] for k in ('claim','agreed','final')},indent=2))" "$f"
+              python -c "import json,sys;d=json.load(open(sys.argv[1]));print(json.dumps({k:d.get(k) for k in ('claim','agreed','final')},indent=2))" "$f"
               echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           done

@@ -1,0 +1,57 @@
+{
+  "claim": "C0029",
+  "agreed": true,
+  "final": "accept",
+  "sandboxed": true,
+  "restated": "Let f(q,r) be defined by the Brouwer recurrence (MISSION section 2), so that for q>=r>=0 f(q,r) is the unique p>r with either r<p<q and [p,p,r] a P-position of 3-row Chomp, or p>=q and [p,q,r] a P-position. Call row r stale if only finitely many P-positions [p,q,r] with p>=q>=r exist, and for a stale row let N(r) be 1 + the largest such q. Then for every stale row r: with q0 the least q>=r such that f(q,r)<=q, one has f(q0,r)=q0, f(q,r)=q0 for all q>=q0, N(r)=q0+1, and q0<=2r+1. Hence N(r)<=2r+2 for every stale row, and N(r)<=3r for every stale row r>=1.",
+  "ledger_statement": "N(r) <= 2r+2 for every STALE row r (a row with finitely many P-positions), hence N(r) <= 3r for r >= 1, closing (B1) of byrnes_audit.md with K(r)=2r+2. Let q0 be the least q>=r with f(q,r)<=q. (1) f(q0,r)=q0: if p=f(q0,r)<q0 then by Sheiner Lemma 2.1 r<p<q0 and [p,p,r] is P, so f(p,r)=p, contradicting minimality of q0. So the row is constant with value c_r=q0, its last P-position [p,q,r] (p>=q) is at q=q0, and N(r)=c_r+1. (2) c_r<=2r+1: if c_r>r+1, Sheiner Lemma 4.2 (row-start propagation, Lean-verified) at q=r+1 gives b<r with f(r+1,b)=c_r, and #G07 s8.1 (=C0012) gives f(r+1,b) <= (r+1)+b+1 <= 2r+1. Replaces the earlier route via #G07 s8.8 and 'A029902 is increasing', which is unproved (constant-row values increasing in r).",
+  "submission_leaks": [],
+  "escape_attempts_blocked": 1,
+  "spend": 0.1799,
+  "verdicts": [
+    {
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": "No non-following step found: Lemma 1's minimality argument and Lemma 2's combination of (S4.2) at q=r+1 with (B8.1) are complete, uniform in r, and use only explicit constants. Cosmetic only: (a) the cited (C0012) sketch's 'stale branch gives f(q-1,r) <= q+r' silently assumes q-1 >= r (corner q=r uses f(q-1,r)=f(r-1,r-1) <= 2r-1, so the bound survives unchanged); (b) the verification blurb says '117 stale rows' for a 400x400 table where 165 stale rows exist (117 is the count for r <= 200); (c) N(r) is explicitly redefined for stale rows to the census convention (1 + last q with a P-position), since f(q,r)-q = c_r - q is not literally periodic; this matches GROUND_TRUTH's census definition.",
+      "counterexample_search": {
+        "range_checked": "independent recurrence table to q,r <= 400 (165 stale rows); solver table to q,r <= 1000 (414 stale rows, (S4.2) at 60472 instances); census_50000.tsv all 29289 stale rows to r = 50000 (complete trailer verified); direct game-theoretic DP to 20x20x20 validating (S2.1) and P-position capture; boundary rows r = 0,1,2,3,4,5 and anomalous r = 120; claim's own constants r = 1 case",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "arXiv API: all:chomp AND all:period (REFUSED - network blocked by sandbox)",
+          "arXiv API: all:3-row chomp (REFUSED - network blocked)",
+          "OEIS search: chomp 3 row (REFUSED - network blocked)",
+          "in-repo literature record: MISSION sections 3-4 (Byrnes 2003, Brouwer et al. 2005, Sheiner arXiv:2605.23837) - no effective stale-row bound recorded; target listed as OPEN"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "Effectivity is genuine: the constant is computed, not asserted. The line 'c_r = f(r+1, b) <= (r + 1) + b + 1 <= (r + 1) + (r - 1) + 1 = 2r + 1' produces the bound c_r <= 2r+1, and 'N(r) = c_r + 1 <= 2r + 2' gives the computable K(r) = 2r + 2 (e.g. r = 1000 gives N(1000) <= 2002). No appeal to Byrnes' non-effective periodicity; the only inputs are Sheiner's printed (machine-checked) Lemma 4.2 and the explicit bound f(q,b) <= q+b+1.",
+      "confidence": "high",
+      "_temperature": 0.3
+    },
+    {
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": null,
+      "counterexample_search": {
+        "range_checked": "independent recurrence implementation cross-checked against GROUND_TRUTH solver (0 mismatches on 301x301), full claim battery on all q,r <= 1000, all 29289 stale rows of the complete census_50000.tsv (r <= 50000), full row r = 49999 out to q = 71200, plus boundary rows r = 0 (live), r = 1, r = 3, r = 120 (live (-1)^q anomaly); (S4.2) f-side audited at 414 hypothesis sites up to 1000x1000; (B8.1)/C0012 audited on the full 1000x1000 grid",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "arXiv API: all:\"chomp\" AND all:\"three rows\"",
+          "OEIS search: chomp 3-row"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "Fully computable. The constant is produced explicitly in Lemma 2: \"c_r = f(r+1, b) <= (r + 1) + b + 1 <= (r + 1) + (r - 1) + 1 = 2r + 1\", yielding \"N(r) = c_r + 1 <= 2r + 2\". A calculator gives N(1000) <= 2002; no appeal to Byrnes' non-effective periodicity, so no circularity.",
+      "confidence": "high",
+      "_temperature": 0.8
+    }
+  ]
+}

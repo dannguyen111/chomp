@@ -13,6 +13,7 @@ import argparse
 import json
 import subprocess
 import sys
+from pathlib import Path
 from datetime import datetime, timezone
 
 
@@ -41,8 +42,51 @@ def resolve(blob: str) -> dict[str, dict]:
     return out
 
 
+# Files in LEDGER/referee that are queue state, not verdicts.
+BOOKKEEPING = ("attempts.json", "hold.json")
+
+
 def money(x: float) -> str:
     return f"${x:,.4f}"
+
+
+def failed_runs(since: str) -> list[str]:
+    """Workflow runs in the window that did not succeed. Needs `gh`; if it is
+    missing or unauthenticated this says so instead of guessing."""
+    try:
+        r = subprocess.run(["gh", "run", "list", "-L", "30", "--json",
+                            "workflowName,event,conclusion,createdAt,databaseId"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           check=False)
+    except OSError:
+        return ["(gh not available -- check Actions for failed runs by hand)"]
+    if r.returncode != 0:
+        return ["(gh run list failed -- check Actions for failed runs by hand)"]
+    cut = sh("git", "log", "-1", f"--before={since}", "--format=%cI", "HEAD")
+    try:
+        start = datetime.fromisoformat(cut) if cut else None
+    except ValueError:
+        start = None
+    out = []
+    for run in json.loads(r.stdout or "[]"):
+        when = datetime.fromisoformat(run["createdAt"].replace("Z", "+00:00"))
+        if start and when < start:
+            continue
+        if run.get("conclusion") in ("failure", "cancelled", "timed_out"):
+            out.append(f"{run['workflowName']} run {run['databaseId']} "
+                       f"({run['event']}, {run['createdAt'][:16]}Z): "
+                       f"{run['conclusion']}")
+    return out
+
+
+def held_but_moved() -> list[str]:
+    try:
+        held = json.load(open("LEDGER/referee/hold.json", encoding="utf-8"))
+        now = resolve(open("LEDGER/claims.jsonl", encoding="utf-8").read())
+    except (OSError, json.JSONDecodeError):
+        return []
+    return [k for k in held
+            if now.get(k, {}).get("status") not in ("open", "evidence")]
 
 
 def main(argv=None) -> int:
@@ -126,19 +170,40 @@ def main(argv=None) -> int:
 
     # --- referee ---------------------------------------------------------
     add("")
+    failed_attempts: list[dict] = []
+    new_verdicts = 0
     if old:
-        ch = sh("git", "diff", "--name-only", old, "HEAD", "--", "LEDGER/referee")
+        ch = sh("git", "diff", "--name-only", "--diff-filter=AM", old, "HEAD",
+                "--", "LEDGER/referee")
         add("Referee files changed:")
         add("  " + ("\n  ".join(ch.splitlines()) if ch else "(none)"))
-    for p, label in (("LEDGER/referee", "verdicts"),):
-        try:
-            import glob
-            for f in sorted(glob.glob(p + "/*.json")):
+        for f in ch.splitlines():
+            name = f.rsplit("/", 1)[-1]
+            if name in BOOKKEEPING:
+                continue
+            try:
                 d = json.load(open(f, encoding="utf-8"))
-                add(f"  {f.replace(chr(92), '/')}: final={d.get('final')} "
-                    f"agreed={d.get('agreed')} spend={d.get('spend')}")
+            except (OSError, json.JSONDecodeError):
+                continue
+            if "/invalid/" in f:
+                failed_attempts.append(d)
+                passes = ", ".join(str(v.get("disposition"))
+                                   for v in d.get("verdicts", []))
+                add(f"    {d.get('claim')}: {d.get('final')} ({passes})")
+            else:
+                new_verdicts += 1
+    # Every verdict that ever moved a claim, not just this window's.
+    add("All verdicts on file:")
+    import glob
+    for f in sorted(glob.glob("LEDGER/referee/*.json")):
+        if f.replace(chr(92), "/").rsplit("/", 1)[-1] in BOOKKEEPING:
+            continue
+        try:
+            d = json.load(open(f, encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            pass
+            continue
+        add(f"  {Path(f).stem}: final={d.get('final')} "
+            f"agreed={d.get('agreed')} spend={d.get('spend')}")
 
     # --- what needs a human ----------------------------------------------
     add("")
@@ -161,6 +226,21 @@ def main(argv=None) -> int:
         pass
     if not log:
         flags.append("no commits in 24h -- the crons may be failing; check Actions")
+    # Oct 4-5: six referee attempts, $2.60, no verdicts, one run cancelled at
+    # the timeout and one failed -- and this section said "nothing".
+    if failed_attempts and not new_verdicts:
+        flags.append(f"{len(failed_attempts)} referee attempt(s) and no verdict "
+                     f"-- read LEDGER/referee/invalid/")
+    for d in failed_attempts:
+        ds = {v.get("disposition") for v in d.get("verdicts", [])}
+        if ds == {"accept_with_gaps"}:
+            flags.append(f"{d.get('claim')}: both passes accept_with_gaps -- "
+                         f"fill the gaps; rerunning it as is will not help")
+    for k in held_but_moved():
+        flags.append(f"{k} is in hold.json but no longer open/evidence")
+    if old:
+        for run in failed_runs(a.since):
+            flags.append(run)
     add("  " + ("\n  ".join(flags) if flags else "nothing"))
 
     print("\n".join(L))

@@ -65,16 +65,69 @@ def _parse(text: str) -> dict | None:
     whole reply unparseable, i.e. `inconclusive`. In a paper about sets of
     P-positions that is most replies.
     """
+    found = _scan(text)
+    if found is None:
+        # Referee run 17 (C0028, t=0.3) wrote a complete verdict and lost it:
+        # the model quoted the proof inside a string without escaping the
+        # quotes -- "...in closed form: "g(1)=1, ..."" -- so no brace decoded.
+        # Retry once on a copy with stray inner quotes escaped, and flag the
+        # result so an audit can tell a repaired verdict from a clean one.
+        found = _scan(text, repair=True)
+        if found is not None:
+            found["_repaired"] = True
+    return found
+
+
+def _scan(text: str, repair: bool = False) -> dict | None:
     dec = json.JSONDecoder()
     found = None
-    for m in re.finditer(r"\{", text):
+    # Repair starts fresh at each candidate object, so a quote in the prose
+    # before the verdict cannot throw the in-string tracking out of phase.
+    for m in re.finditer(r'\{\s*"' if repair else r"\{", text):
         try:
-            obj, _ = dec.raw_decode(text, m.start())
+            if repair:
+                obj, _ = dec.raw_decode(_escape_stray_quotes(text[m.start():]))
+            else:
+                obj, _ = dec.raw_decode(text, m.start())
         except json.JSONDecodeError:
             continue
         if isinstance(obj, dict) and "disposition" in obj:
             found = obj
     return found
+
+
+def _escape_stray_quotes(text: str) -> str:
+    """Escape every `"` inside a JSON string that cannot be its closing quote.
+
+    A closing quote is followed, after whitespace, by `:` `}` `]` or a
+    newline, or by a `,` that leads to the next key or element (`"` `{` `[`).
+    Anything else -- a letter, a digit, `(`, `, fully` -- means the model
+    meant a literal quote. Heuristic, so only ever used after the strict
+    parse has failed.
+    """
+    out, in_str, i = [], False, 0
+    while i < len(text):
+        ch = text[i]
+        if in_str and ch == "\\":
+            out.append(text[i:i + 2])
+            i += 2
+            continue
+        if ch == '"':
+            if not in_str:
+                in_str = True
+            else:
+                rest = text[i + 1:].lstrip(" \t")
+                closes = rest[:1] in ("", ":", "}", "]", "\n", "\r") or (
+                    rest[:1] == "," and rest[1:].lstrip()[:1] in ('"', "{", "["))
+                if closes:
+                    in_str = False
+                else:
+                    out.append('\\"')
+                    i += 1
+                    continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
 
 
 FORCE_VERDICT = ("[HARNESS] Stop. Emit your JSON verdict now, this turn, and "
@@ -364,14 +417,16 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     }
     # An inconclusive run is a harness bug report, not a verdict. Keep it out of
     # the verdict directory, or `refereeable()` will treat the claim as judged
-    # and never look at it again.
+    # and never look at it again. Each failed attempt gets its own file:
+    # one name per claim meant run 17 overwrote run 16's record of C0028.
+    tries = attempts(root)
+    n = tries.get(claim_id, 0) + 1
     name = (f"{claim_id}.json" if final in ("accept", "reject")
-            else f"invalid/{claim_id}.{final}.json")
+            else f"invalid/{claim_id}.{final}.{n}.json")
     (out_dir / name).parent.mkdir(parents=True, exist_ok=True)
     (out_dir / name).write_text(json.dumps(report, indent=2), encoding="utf-8")
     if final not in ("accept", "reject"):
-        tries = attempts(root)
-        tries[claim_id] = tries.get(claim_id, 0) + 1
+        tries[claim_id] = n
         _attempts_path(root).write_text(json.dumps(tries, indent=2,
                                                    sort_keys=True) + "\n", encoding="utf-8")
 
@@ -400,12 +455,17 @@ def referee(root: Path, claim_id: str, session: str = "referee",
         print(f"\n{claim_id} INCONCLUSIVE -- a pass did not finish. The claim "
               f"is untouched and remains refereeable. A harness problem to "
               f"fix, not a result.")
+    elif agreed:
+        # Run 16: C0029, C0032, C0033 -- both passes said accept_with_gaps.
+        print(f"\n{claim_id} UNRESOLVED -- both passes said {d0}. The proof "
+              f"needs its gaps filled before a rerun can accept it; they are "
+              f"in LEDGER/referee/{name}.")
     else:
         print(f"\n{claim_id} UNRESOLVED -- the passes disagreed ({d0} vs {d1}). "
               f"Not promoted, and NOT refuted: a split is an open question, not "
               f"a refutation. The claim is untouched and remains refereeable; "
               f"read both verdicts in "
-              f"LEDGER/referee/invalid/{claim_id}.unresolved.json.")
+              f"LEDGER/referee/{name}.")
 
     return report
 

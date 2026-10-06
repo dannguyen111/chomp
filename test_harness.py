@@ -245,6 +245,25 @@ def test_referee_parse_survives_braces_in_prose():
     print("  parse: verdict found past a brace in prose")
 
 
+def test_referee_parse_repairs_unescaped_quotes():
+    """Run 17, C0028 t=0.3: a whole verdict lost to quotes inside a string."""
+    from harness.referee import _parse
+    text = ('He wrote "so it holds, then stopped.\n```json\n{\n'
+            '  "disposition": "accept_with_gaps",\n'
+            '  "effectivity_check": "Closed form in Section 2-3: "g(1)=1, '
+            'g(r+1)=g(r)(r+2)^(r+1)" and "h(1)=12", fully computable.",\n'
+            '  "novelty": {"result": "inconclusive"},\n'
+            '  "confidence": "medium"\n}\n```')
+    v = _parse(text)
+    assert v and v["disposition"] == "accept_with_gaps", v
+    assert v["_repaired"] is True
+    assert '"g(1)=1, ' in v["effectivity_check"]
+    assert v["confidence"] == "medium"
+    clean = _parse('{"disposition": "reject", "confidence": "high"}')
+    assert "_repaired" not in clean
+    print("  parse: unescaped inner quotes repaired and flagged")
+
+
 def _referee_root(tmp: Path) -> Path:
     import shutil
     shutil.copy2(ROOT / "MISSION.md", tmp / "MISSION.md")
@@ -320,6 +339,38 @@ def test_referee_asks_again_when_reply_does_not_parse():
     print("  referee: unparseable reply -> one tool-less retry -> verdict")
 
 
+def test_referee_keeps_every_failed_attempt():
+    """Run 17 overwrote run 16's C0028 record. Each attempt gets its own file."""
+    import os
+    import tempfile
+    from harness import make_refbox
+    from harness import referee as R
+    from harness.orclient import Reply
+
+    def fake_chat(self, messages, **kw):
+        # The two passes disagree, so every run is `unresolved`.
+        d = "accept" if kw.get("temperature") == 0.3 else "accept_with_gaps"
+        self.budget.charge(0.01, kw.get("tag", ""))
+        return Reply('{"disposition": "%s"}' % d, [], 0.01, 10, 10, 0, "stop")
+
+    orig_chat, orig_box = R.OpenRouter.chat, make_refbox.build_box
+    R.OpenRouter.chat = fake_chat
+    make_refbox.build_box = lambda root, claim, box, **kw: (box, [])
+    os.environ.setdefault("OPENROUTER_API_KEY", "test-key")
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            root = _referee_root(Path(d))
+            for _ in range(2):
+                assert R.referee(root, "C0001")["final"] == "unresolved"
+            inv = root / "LEDGER" / "referee" / "invalid"
+            assert sorted(p.name for p in inv.iterdir()) == [
+                "C0001.unresolved.1.json", "C0001.unresolved.2.json"]
+            assert R.attempts(root) == {"C0001": 2}
+    finally:
+        R.OpenRouter.chat, make_refbox.build_box = orig_chat, orig_box
+    print("  referee: two failed attempts, two files, attempts=2")
+
+
 if __name__ == "__main__":
     before = _real_state()
     for fn in [
@@ -333,7 +384,9 @@ if __name__ == "__main__":
         test_budget_hard_cap,
         test_session_loop_with_fake_model,
         test_referee_parse_survives_braces_in_prose,
+        test_referee_parse_repairs_unescaped_quotes,
         test_referee_queue_and_dedup,
+        test_referee_keeps_every_failed_attempt,
         test_referee_asks_again_when_reply_does_not_parse,
     ]:
         print(f"\n{fn.__name__}")

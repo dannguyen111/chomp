@@ -2,3 +2,7 @@
 # runners; a CRLF copy fails there with a bare `$'\r': command not found`.
 * text=auto eol=lf
 *.png binary
+# Append-only: concurrent appends from a referee run and an operator commit
+# must both survive a rebase. Runs 18 and 19 lost two agreed accepts to a
+# conflict here (2026-10-06).
+LEDGER/claims.jsonl merge=union

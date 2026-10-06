@@ -136,7 +136,7 @@ jobs:
           # Another run may have landed while this one worked. Rebase and retry
           # rather than force-pushing over someone else's ledger append.
           for i in 1 2 3; do
-            git pull --rebase --autostash && git push && exit 0
+            { git pull --rebase --autostash || { git rebase --abort; false; }; } && git push && exit 0
             sleep $((i * 5))
           done
           echo "Push failed after 3 attempts."; exit 1

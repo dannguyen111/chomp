@@ -643,7 +643,21 @@ dropped the operator's flag. The note is still in its evidence.
   `u_0 = 0` and `u_1 <= 12`. Addendum 2 is rewritten: `a1 >= u_r` follows from
   the minimality of `N(r)`, the suffix keeps least period `p_r`, and the
   well-ordering step is written out.
-- **C0032/C0033 are held.** Both passes said `accept_with_gaps`. Fill the gaps
-  in `C0032_machine.md`, then delete them from `hold.json`.
+- **C0032/C0033**: the scope is now `r >= 1`. The machine and (FR) fail only at
+  `(0,0)`, and row 0 is explicit. The invariant `H_a ⊆ [0,m_r-1]` is proved, and
+  the stale-row `N(c)` convention is stated. C0033 says it claims no bound.
+- **C0060**: unconditional. (P) is Sheiner L4.1 + L2.3(a). The mex branch at
+  `(n,n)` holds because `d_{n-1} > n-1`, and the `d_a` are distinct by the mex.
+  Restated as an identity with no bound, which answers the reject's
+  effectivity objection.
+- All four got provenance-free restatements and are back in the queue.
+- **Effectivity objections to structural lemmas.** The referee prompt applies
+  the effectivity trap to every claim. C0033 and C0060 each drew "no computable
+  bound", though neither claims one. If that keeps producing rejects, scope the
+  rule in `prompts/referee.md` to claims that assert a bound. That is a change
+  to the gate, so Dan decides.
+- Dispatched 2026-10-06 ~01:49Z: `claim_id=C0029`, then `claim_id=C0028`.
+  **Do not queue a third run while one is pending**: a concurrency group keeps
+  one pending run, and a new one cancels it.
 - The C0080 ledger note no longer calls Sheiner 2.3(b) a typo.
 

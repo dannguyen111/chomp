@@ -6,7 +6,7 @@ with no memory of the last one. The *science* lives in `LEDGER/`,
 what has been run, what broke, what to run next, and the conventions that were
 learned the expensive way.
 
-Last updated: **2026-10-01**. Sections 0 and the dated sections at the end are
+Last updated: **2026-10-05**. Sections 0 and the dated sections at the end are
 current. **Sections 1 and 2 are stale** -- see the note on them.
 
 ---
@@ -564,7 +564,7 @@ other refereeable claims waited. The referee has judged two claims ever.
     that lemma. 18 eligible claims became 9 proofs.
   - `LEDGER/referee/hold.json` takes a claim out of the queue, with a reason.
 - **`referee.yml`** commits and pushes after each claim, and its timeout is now
-  350 minutes so a six-claim manual run fits.
+  350 minutes. (It does not fit six claims: see 2026-10-05.)
 - **Referee model stays MiMo**, at Dan's direction.
 
 ### Literature review of the 9 proofs
@@ -600,3 +600,50 @@ Two side findings:
 
 Separately, session 30 rewrote C0003 with `novelty_checked: false`, which
 dropped the operator's flag. The note is still in its evidence.
+
+## 2026-10-05: referee runs 16-17, six attempts and no verdict
+
+### What happened
+
+- **Run 16** (manual, 6 claims) finished C0029, C0032, C0033, C0060, all
+  `unresolved`, and was cancelled at the 350-minute timeout in the middle of
+  C0028. C0024 never ran. Claims take **65-85 minutes**, not 30-50.
+- **Run 17** (cron) had a C0028 pass end `inconclusive`, then **failed** in the
+  summary step: `KeyError: 'claim'` from reading `attempts.json`. The verdict
+  had already been pushed.
+- $2.60 spent. The digest said `NEEDS YOU: nothing`.
+- The cron started at 18:30Z, not 09:17Z. The three runs before it also started
+  5-9 hours late. That is GitHub's scheduler; nothing in the repo causes it.
+
+### Fixed
+
+- `_parse` lost a complete verdict. Run 17's t=0.3 pass wrote valid
+  reasoning, but the JSON had unescaped quotes inside a string. The parser now
+  retries with stray quotes escaped and marks the verdict `_repaired: true`.
+  **Read a repaired verdict before trusting it.**
+- `invalid/<id>.<final>.<n>.json`, one file per attempt. Run 17 had overwritten
+  run 16's C0028 record. Older files keep their unnumbered names.
+- `referee.yml`: the summary step skips `attempts.json` and `hold.json`. The
+  loop starts no claim after 260 minutes. Scheduled commits are titled with the
+  real target, not `()`.
+- `ops/digest.py`: NEEDS YOU now flags failed or cancelled runs (needs `gh`),
+  attempts without a verdict, agreed `accept_with_gaps`, and stale holds.
+
+### The proofs
+
+- **C0029, new proof, new bound `N(r) <= 2r+2`.** The old chain also needed
+  "A029902 is increasing", i.e. constant-row values increase with the row.
+  Neither referee pass caught that it is **unproved**. #G07 s8.11 leaves a
+  related question open. The new proof: the freeze value equals the freeze
+  point (Sheiner Lemma 2.1), then Sheiner Lemma 4.2 at `q = r+1` plus #G07 s8.1
+  gives `c_r <= 2r+1`. It no longer uses s8.8. Still derivative. There is a
+  provenance-free restatement in `restatements.json`, and the leak scan of the
+  submission is empty.
+- **C0028**: Addendum 3 gives the base case: row 0 is `f(q,0) = q+1`, so
+  `u_0 = 0` and `u_1 <= 12`. Addendum 2 is rewritten: `a1 >= u_r` follows from
+  the minimality of `N(r)`, the suffix keeps least period `p_r`, and the
+  well-ordering step is written out.
+- **C0032/C0033 are held.** Both passes said `accept_with_gaps`. Fill the gaps
+  in `C0032_machine.md`, then delete them from `hold.json`.
+- The C0080 ledger note no longer calls Sheiner 2.3(b) a typo.
+

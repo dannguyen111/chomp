@@ -1,5 +1,7 @@
 {
   "C0041": "superseded by C0080, which is Sheiner Lemma 2.3(b) (operator novelty check 2026-10-04)",
   "C0045": "prior art: Sheiner recurrence (1) at q=r=n; #G07 s8.1 (operator novelty check 2026-10-04)",
-  "C0080": "prior art: Sheiner Lemma 2.3(a)-(b); #G07 s8.3 (operator novelty check 2026-10-04)"
+  "C0080": "prior art: Sheiner Lemma 2.3(a)-(b); #G07 s8.3 (operator novelty check 2026-10-04)",
+  "C0032": "both passes accept_with_gaps in referee run 16 (2026-10-05); fill the gaps in C0032_machine.md before releasing -- rerunning it unchanged will not help",
+  "C0033": "both passes accept_with_gaps in referee run 16 (2026-10-05); fill the gaps in C0032_machine.md before releasing -- rerunning it unchanged will not help"
 }

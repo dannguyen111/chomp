@@ -3,5 +3,6 @@
   "C0045": "prior art: Sheiner recurrence (1) at q=r=n; #G07 s8.1 (operator novelty check 2026-10-04)",
   "C0080": "prior art: Sheiner Lemma 2.3(a)-(b); #G07 s8.3 (operator novelty check 2026-10-04)",
   "C0032": "both passes accept_with_gaps in referee run 16 (2026-10-05); fill the gaps in C0032_machine.md before releasing -- rerunning it unchanged will not help",
-  "C0033": "both passes accept_with_gaps in referee run 16 (2026-10-05); fill the gaps in C0032_machine.md before releasing -- rerunning it unchanged will not help"
+  "C0033": "both passes accept_with_gaps in referee run 16 (2026-10-05); fill the gaps in C0032_machine.md before releasing -- rerunning it unchanged will not help",
+  "C0060": "split in referee run 16 (reject vs accept_with_gaps), both naming the same gaps: mex branch at every diagonal cell, distinctness of the d_a; fill them and restate as an identity before releasing (2026-10-05)"
 }

@@ -12,10 +12,44 @@ from __future__ import annotations
 
 import os
 import re
+import signal
 import subprocess
 from pathlib import Path
 
 MAX_OUTPUT = 30_000  # chars; a runaway print loop must not eat the context
+
+# Address-space cap on every sandboxed command, in GiB. The runner has 16 GB
+# and nothing else on it matters, but if a referee's census or table eats all
+# of it the kernel kills the runner itself, and the job dies with no log and
+# no verdict. That is the likeliest reading of referee run 21, which died two
+# and a half hours into a claim with its step still running and no log. Under
+# the cap the script gets a MemoryError or bad_alloc it can read and
+# work around.
+SANDBOX_MEM_GB = float(os.environ.get("CHOMP_SANDBOX_MEM_GB", "8"))
+
+# Process groups started by sandboxed commands. A command the model puts in
+# the background outlives the call that started it, and subprocess's own
+# timeout kills only the shell, not what the shell started. reap() kills them.
+_GROUPS: set[int] = set()
+
+
+def _sandbox_limits() -> None:      # runs in the child, before exec
+    import resource
+    cap = int(SANDBOX_MEM_GB * 2**30)
+    resource.setrlimit(resource.RLIMIT_AS, (cap, cap))
+
+
+def _killpg(pgid: int) -> None:
+    try:
+        os.killpg(pgid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+
+def reap() -> None:
+    """Kill everything a sandboxed command left running."""
+    while _GROUPS:
+        _killpg(_GROUPS.pop())
 
 SCHEMA = [
     {
@@ -25,7 +59,10 @@ SCHEMA = [
             "description": (
                 "Run a bash command in the project root. Use for compiling and "
                 "running the solver, analysis scripts, and inspecting output. "
-                "Long-running commands are fine up to the timeout."
+                "Long-running commands are fine up to the timeout. In the "
+                "referee sandbox each command is capped at "
+                f"{SANDBOX_MEM_GB:g} GB of address space: a MemoryError or "
+                "bad_alloc means use less memory, not retry."
             ),
             "parameters": {
                 "type": "object",
@@ -208,22 +245,38 @@ def dispatch(name: str, args: dict, root: Path, *, sandbox: bool = False) -> str
                 if bad:
                     return f"REFUSED: {bad} This refusal is recorded."
             timeout = min(int(args.get("timeout", 600)), 3600)
-            r = subprocess.run(
+            posix = os.name == "posix"
+            p = subprocess.Popen(
                 args["command"],
                 shell=True,
                 cwd=root,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
                 # A model's script printing one stray byte must not turn a
                 # paid tool call into a UnicodeDecodeError.
                 encoding="utf-8",
                 errors="replace",
-                timeout=timeout,
                 env=_tool_env(),
+                # Its own process group, so a timeout or reap() can kill the
+                # whole tree and not just the shell.
+                start_new_session=posix,
+                preexec_fn=_sandbox_limits if (sandbox and posix) else None,
             )
-            out = r.stdout + (f"\n[stderr]\n{r.stderr}" if r.stderr else "")
-            if r.returncode:
-                out += f"\n[exit {r.returncode}]"
+            if sandbox and posix:
+                _GROUPS.add(p.pid)
+            try:
+                stdout, stderr = p.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                if posix:
+                    _killpg(p.pid)
+                else:
+                    p.kill()
+                p.communicate()
+                raise
+            out = stdout + (f"\n[stderr]\n{stderr}" if stderr else "")
+            if p.returncode:
+                out += f"\n[exit {p.returncode}]"
             return _clip(out) or "(no output)"
 
         if name == "write_file":

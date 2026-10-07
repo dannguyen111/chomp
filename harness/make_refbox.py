@@ -61,7 +61,8 @@ def build_solver(root: Path) -> Path:
     from GROUND_TRUTH import chomp                      # type: ignore
     return chomp.build()
 
-def build_box(root: Path, claim, out: Path, census=(), statement=None):
+def build_box(root: Path, claim, out: Path, census=(), statement=None,
+              deps=None):
     """Create the isolated box for one claim. Returns (path, leaks).
 
     `leaks` lists provenance the SUBMISSION would hand the referee; a non-empty
@@ -77,7 +78,10 @@ def build_box(root: Path, claim, out: Path, census=(), statement=None):
 
     if statement:
         claim = replace(claim, statement=statement)
-    m = build_messages(root, claim, (root / why).read_text(encoding="utf-8"), {})
+    # The cited results go in exactly as the referee will see them, so the
+    # leak scan below covers their text too.
+    m = build_messages(root, claim, (root / why).read_text(encoding="utf-8"),
+                       deps or {})
     (out / "REFEREE_PROMPT.md").write_text(
         m[0]["content"] + "\n\n" + "=" * 70 + "\n\n" + m[1]["content"],
         encoding="utf-8")
@@ -110,8 +114,11 @@ def build_box(root: Path, claim, out: Path, census=(), statement=None):
               # expected answer
               "referee", "reviewer", "pre-screen", "prescreen")
              if probe in low]
+    # A declared dependency is listed by id under "Results cited as already
+    # established", so naming it in the proof tells the referee nothing new.
+    cited = {claim.id, *claim.depends_on}
     leaks += [f"cross-reference {c}" for c in
-              sorted(set(re.findall(r"C\d{4}", body))) if c != claim.id]
+              sorted(set(re.findall(r"C\d{4}", body))) if c not in cited]
     return out, leaks
 
 
@@ -137,8 +144,11 @@ def main(argv=None) -> int:
         print(f"no such claim {a.claim_id}", file=sys.stderr)
         return 1
     try:
+        resolved = led.resolved()
         out, leaks = build_box(root, claim, Path(a.out).resolve(),
-                               a.census, a.statement)
+                               a.census, a.statement,
+                               {d: resolved[d] for d in claim.depends_on
+                                if d in resolved})
     except ValueError as e:
         print(e, file=sys.stderr)
         return 1

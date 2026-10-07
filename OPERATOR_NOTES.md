@@ -661,3 +661,76 @@ dropped the operator's flag. The note is still in its evidence.
   one pending run, and a new one cancels it.
 - The C0080 ledger note no longer calls Sheiner 2.3(b) a typo.
 
+
+## 2026-10-07: run 21 died mid-claim; referee work is now saved as it goes
+
+### What happened
+
+- **Run 21** (manual, `auto`, 4 claims) refereed C0032 and committed the result
+  at 00:27Z. It then worked on its second claim until 02:56Z and died with the
+  Referee step still running. The job used about 230 of its 350 minutes, so
+  this was not the timeout. GitHub has no log for it (the log API returns 404),
+  which is what a lost runner looks like. The likeliest cause is memory: the
+  referee's shell commands had no memory cap, and a timed-out command killed
+  only its shell, so anything it had started kept running. Claims 2-4 were
+  lost, and so was the spend after 00:27, which never reached `BUDGET.json`.
+- **Run 22** (scheduled) refereed C0033.
+- **C0032 and C0033: second split each**, one accept and one
+  accept_with_gaps. The gaps were: (FR) was used without being derived from
+  section 2, which also leaves the mex over positives vs. non-negatives
+  unexplained; "empty trail at a = 0" was false under the infinite-trail
+  definition; `#G07 s8.1` was cited without being a declared dependency; the
+  invariant was stated one step past termination; and the `r = 1` convention
+  was missing.
+
+### Fixed
+
+- **Proof** (`C0032_machine.md`). (FR) is now derived from section 2 in four
+  steps. The only outside input is the stale-row lemma `f(q0,r) = q0`, which
+  is the declared dependency C0029. The trail is finite, so `T_0 = ∅` and
+  `H_0 = V'(0)` honestly, and the infinite-trail reading is a remark.
+  `f(q,c) <= q+c+1` is proved inline (the mex set has at most `q+c` elements),
+  so `#G07` is no longer cited. The invariant stops at termination, `r = 1` is
+  spelled out, and the claim ids are gone from the headings. Re-checked on an
+  independent table built from section 2: 20469 steps, rows 1-132, 0 failures,
+  with `{1..q-1} ⊆ S` at every step.
+- **Ledger.** C0024 is dropped from C0032's `depends_on`. It was unused and is
+  still open, yet the referee was shown it as "already established". The
+  C0032 and C0033 restatements get the defined-values and `r = 1` wording.
+- **Dependencies are shown restated.** `build_messages` now uses a
+  dependency's restatement when one exists. C0029's ledger text, which names
+  byrnes_audit.md, was going to the referee verbatim. The leak scan now covers
+  the dependency text and no longer flags ids the claim declares. Both claims
+  scan clean.
+- **Progress is saved as it goes.**
+  - `harness/referee.py` writes `LEDGER/referee/progress/<id>.json` after every
+    pass, and one transcript line per message to
+    `runs/referee/run-<N>/<id>.t<temp>.jsonl`.
+  - The workflow pushes these, `BUDGET.json` and a heartbeat (`free -m`, top
+    processes) to the side branch `referee-wip/run-<N>` every 5 minutes. The
+    snapshot never touches main or the working tree, so it cannot conflict
+    with anything.
+  - A clean finish deletes the branch.
+  - If the job dies, the next job's "Recover dead runs" step
+    (`ops/recover_referee.py`) brings back the progress, transcripts, missing
+    ledger lines and verdicts, and the unrecorded spend.
+  - A rerun of the identical submission (same fingerprint) reuses a finished
+    pass. A changed proof starts from scratch.
+  - Worst case, a dead runner now loses 5 minutes of work.
+- **Sandbox.**
+  - Each referee command is capped at 8 GB of address space
+    (`CHOMP_SANDBOX_MEM_GB`). The model sees a MemoryError instead of the
+    runner dying.
+  - A timeout now kills the command's whole process group.
+  - Background jobs are reaped at the end of each pass.
+- **Digest** flags unfinished progress files and leftover `referee-wip/*`
+  branches.
+
+### Still yours
+
+- **Novelty** for C0032 and C0033 cannot be checked from the sandbox. Your
+  2026-10-04 review rated C0033 clear and C0032 an attributed derivative.
+- Run 21's spend on its second claim is unrecoverable: it ran before
+  snapshots existed. `BUDGET.json` undercounts by whatever that was, at most
+  the $1.00 per-claim cap. OpenRouter's dashboard has the real figure.
+- The claims run 21 never finished are still in the queue.

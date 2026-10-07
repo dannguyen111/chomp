@@ -179,7 +179,7 @@ def main(argv=None) -> int:
         add("  " + ("\n  ".join(ch.splitlines()) if ch else "(none)"))
         for f in ch.splitlines():
             name = f.rsplit("/", 1)[-1]
-            if name in BOOKKEEPING:
+            if name in BOOKKEEPING or "/progress/" in f:
                 continue
             try:
                 d = json.load(open(f, encoding="utf-8"))
@@ -236,6 +236,21 @@ def main(argv=None) -> int:
         if ds == {"accept_with_gaps"}:
             flags.append(f"{d.get('claim')}: both passes accept_with_gaps -- "
                          f"fill the gaps; rerunning it as is will not help")
+    # Partial work from a referee job that died (see ops/recover_referee.py).
+    for f in sorted(Path("LEDGER/referee/progress").glob("*.json")):
+        try:
+            d = json.load(open(f, encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        passes = ", ".join(f"t={v.get('_temperature')} {v.get('disposition')}"
+                           for v in d.get("verdicts", [])) or "no pass finished"
+        flags.append(f"{d.get('claim')}: referee run {d.get('run')} did not "
+                     f"finish it ({passes}); the next run resumes it. "
+                     f"Transcripts: runs/referee/run-{d.get('run')}/")
+    wip = sh("git", "ls-remote", "--heads", "origin", "refs/heads/referee-wip/*")
+    for line in wip.splitlines():
+        flags.append(f"{line.split()[-1].removeprefix('refs/heads/')} exists: "
+                     f"a referee job died; the next one recovers it")
     for k in held_but_moved():
         flags.append(f"{k} is in hold.json but no longer open/evidence")
     if old:

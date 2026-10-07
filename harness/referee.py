@@ -14,9 +14,12 @@ Two rules carry all the weight:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import tempfile
+import time
 from dataclasses import replace
 from pathlib import Path
 
@@ -37,8 +40,13 @@ def redacted_mission(root: Path) -> str:
 
 
 def build_messages(root: Path, claim, proof: str, deps: dict) -> list[dict]:
+    # A dependency reaches the referee verbatim, so it gets the same
+    # provenance-free restatement as the claim itself when one is on file.
+    # C0032's referee was shown C0029's ledger text, which names
+    # byrnes_audit.md and the papers the island worked from.
     dep_text = (
-        "\n".join(f"- [{d.id}] {d.statement}" for d in deps.values())
+        "\n".join(f"- [{d.id}] {_restatement(root, d.id) or d.statement}"
+                  for d in deps.values())
         or "(none cited)"
     )
     return [
@@ -241,6 +249,51 @@ def _held(root: Path) -> dict[str, str]:
         return {}
 
 
+# ---- progress: what survives a dead runner ------------------------------
+#
+# Referee run 21 refereed C0032, then worked on its next claim for two and a
+# half hours and died with the step still running: no verdict, no log, and no
+# record of what it had spent. A verdict was only written once both passes had
+# finished. Now every pass is written the moment it ends, and every turn is
+# appended to a transcript, and the workflow pushes both to a side branch every
+# few minutes (see referee.yml and ops/recover_referee.py). A rerun reuses a
+# finished pass of the identical submission instead of paying for it again.
+
+def _run_id() -> str:
+    return os.environ.get("GITHUB_RUN_NUMBER") or "local"
+
+
+def _progress_path(root: Path, claim_id: str) -> Path:
+    return root / "LEDGER" / "referee" / "progress" / f"{claim_id}.json"
+
+
+def _write_json(path: Path, obj) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(obj, indent=2), encoding="utf-8")
+    tmp.replace(path)      # atomic: a snapshot never sees half a file
+
+
+def _fingerprint(messages: list[dict]) -> str:
+    """What the referee was shown. A pass is reusable only for the same text."""
+    return hashlib.sha256(json.dumps(messages, sort_keys=True)
+                          .encode("utf-8")).hexdigest()[:16]
+
+
+class _Transcript:
+    """One JSON line per message, appended as the pass runs."""
+
+    def __init__(self, root: Path, claim_id: str, temp: float):
+        self.path = (root / "runs" / "referee" / f"run-{_run_id()}"
+                     / f"{claim_id}.t{temp}.jsonl")
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def add(self, msg: dict, **extra) -> None:
+        line = {"t": round(time.time(), 1), **extra, **msg}
+        with self.path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(line, ensure_ascii=False) + "\n")
+
+
 def referee(root: Path, claim_id: str, session: str = "referee",
             max_spend: float = 1.00) -> dict:
     led = Ledger(root / "LEDGER")
@@ -274,7 +327,7 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     # solver.
     cached = sorted((root / "GROUND_TRUTH" / "cache").glob("census_*.tsv"))
     box, leaks = make_refbox.build_box(root, claim, box, census=cached,
-                                       statement=restated)
+                                       statement=restated, deps=deps)
     if restated:
         print(f"[referee] using the provenance-free restatement of {claim_id} "
               f"from LEDGER/restatements.json")
@@ -289,10 +342,49 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     # it has to be applied here too or only the box would be clean.
     submitted = replace(claim, statement=restated) if restated else claim
 
+    fingerprint = _fingerprint(build_messages(root, submitted, proof, deps))
+    prog_path = _progress_path(root, claim_id)
+    reusable: dict[float, dict] = {}
+    if prog_path.exists():
+        try:
+            prev = json.loads(prog_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            prev = {}
+        if prev.get("fingerprint") == fingerprint:
+            reusable = {v["_temperature"]: v for v in prev.get("verdicts", [])
+                        if v.get("disposition") not in (None, "inconclusive")}
+            if reusable:
+                print(f"[referee] resuming {claim_id}: reusing the finished "
+                      f"pass(es) {sorted(reusable)} from run {prev.get('run')}")
+        else:
+            print(f"[referee] {prog_path.name} is for a different submission; "
+                  f"starting {claim_id} from scratch")
+    progress = {"claim": claim_id, "run": _run_id(), "fingerprint": fingerprint,
+                "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "verdicts": []}
+
+    def save_progress(state: str) -> None:
+        progress.update(state=state, verdicts=verdicts,
+                        updated=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+        _write_json(prog_path, progress)
+
+    save_progress("started")
+
     TURNS = 40
     forcing = False
     for temp in (0.3, 0.8):
+        if temp in reusable:
+            v = dict(reusable[temp])
+            v.setdefault("_resumed_from_run", prev.get("run"))
+            verdicts.append(v)
+            print(f"[referee t={temp}] {v.get('disposition')} (reused)")
+            continue
+        pass_start = budget.spent
+        log = _Transcript(root, claim_id, temp)
         messages = build_messages(root, submitted, proof, deps)
+        for m in messages:
+            log.add(m)
+        save_progress(f"pass t={temp}")
         # The referee gets tools so it can actually hunt counterexamples.
         for turn in range(TURNS):
             left = TURNS - turn
@@ -326,6 +418,8 @@ def referee(root: Path, claim_id: str, session: str = "referee",
                 "content": reply.text,
                 **({"tool_calls": reply.tool_calls} if reply.tool_calls else {}),
             })
+            log.add(messages[-1], turn=turn,
+                    spend=round(budget.spent - pass_start, 4))
             if not reply.tool_calls:
                 break
             for call in reply.tool_calls:
@@ -350,6 +444,7 @@ def referee(root: Path, claim_id: str, session: str = "referee",
                     "tool_call_id": call["id"],
                     "content": result,
                 })
+                log.add(messages[-1], turn=turn)
 
         v = _parse(reply.text)
         if v is None and not forcing:
@@ -365,6 +460,7 @@ def referee(root: Path, claim_id: str, session: str = "referee",
                                 temperature=temp, reasoning_effort="xhigh",
                                 tag=f"referee/{claim_id}/t{temp}")
             messages.append({"role": "assistant", "content": reply.text})
+            log.add(messages[-1], turn="forced")
             v = _parse(reply.text)
         if v is None:
             # NOT a reject. A referee that never produced a verdict has said
@@ -380,7 +476,13 @@ def referee(root: Path, claim_id: str, session: str = "referee",
                  "_finish_reason": reply.finish_reason,
                  "_raw_tail": reply.text[-2000:]}
         v["_temperature"] = temp
+        v["_spend"] = round(budget.spent - pass_start, 4)
+        v["_run"] = _run_id()
         verdicts.append(v)
+        # Background jobs from this pass must not outlive it: they hold memory
+        # the next pass needs, and they write files the next pass would read.
+        tools.reap()
+        save_progress(f"pass t={temp} done")
         print(f"[referee t={temp}] {v.get('disposition')} -- "
               f"{(v.get('gap_description') or '')[:110]}")
 
@@ -412,7 +514,9 @@ def referee(root: Path, claim_id: str, session: str = "referee",
         "ledger_statement": claim.statement if restated else None,
         "submission_leaks": leaks,
         "escape_attempts_blocked": refusals,
-        "spend": round(budget.spent - start_spend, 4),
+        "spend": round(sum(v.get("_spend", 0) for v in verdicts), 4),
+        "run": _run_id(),
+        "transcripts": f"runs/referee/run-{_run_id()}/",
         "verdicts": verdicts,
     }
     # An inconclusive run is a harness bug report, not a verdict. Keep it out of
@@ -429,6 +533,8 @@ def referee(root: Path, claim_id: str, session: str = "referee",
         tries[claim_id] = n
         _attempts_path(root).write_text(json.dumps(tries, indent=2,
                                                    sort_keys=True) + "\n", encoding="utf-8")
+    # The verdict file now carries both passes; the progress file has done its job.
+    prog_path.unlink(missing_ok=True)
 
     results = [(v.get("novelty") or {}).get("result") for v in verdicts]
     known = any(r == "already known" for r in results)

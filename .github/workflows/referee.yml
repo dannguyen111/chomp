@@ -110,6 +110,31 @@ jobs:
           key: solver-${{ hashFiles('GROUND_TRUTH/solver.cpp') }}
           fail-on-cache-miss: true
 
+      # A `referee-wip/run-<N>` branch left over from an earlier job means that
+      # job died before it could commit (see the snapshot loop below). Bring
+      # its passes, transcripts and spend onto main before refereeing, so a
+      # finished pass is reused rather than paid for twice and the budget
+      # gate counts what the dead run spent.
+      - name: Recover dead runs
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "chomp-harness"
+          git config user.email "noreply@github.com"
+          python -m ops.recover_referee | tee /tmp/recover.txt
+          BRANCHES=$(sed -n 's/^branch: //p' /tmp/recover.txt)
+          [ -n "$BRANCHES" ] || exit 0
+          git add -A BUDGET.json LEDGER runs/referee
+          if ! git diff --cached --quiet; then
+            git commit -q -m "referee ${{ github.run_number }}: recover $(echo $BRANCHES | tr '\n' ' ')"
+            for i in 1 2 3; do
+              { git pull --rebase --autostash || { git rebase --abort; false; }; } && git push && break
+              [ "$i" = 3 ] && { echo "Recovery push failed; leaving the branches."; exit 1; }
+              sleep $((i * 5))
+            done
+          fi
+          for b in $BRANCHES; do git push -q origin --delete "$b" || true; done
+
       - name: What is refereeable
         if: steps.gate.outputs.go == 'true'
         run: python -m harness.referee --list
@@ -129,22 +154,61 @@ jobs:
           git config user.email "noreply@github.com"
           SPEND="${{ steps.gate.outputs.spend }}"
           CLAIM="${{ steps.gate.outputs.claim }}"
+          RUN="${{ github.run_number }}"
+          WIP="referee-wip/run-$RUN"
+          OUT="runs/referee/run-$RUN"
+          mkdir -p "$OUT"
+          # Every git write in this step holds this lock: the snapshot loop
+          # runs alongside commit().
+          LOCK=/tmp/chomp-git.lock
           commit() {
-            git add -A BUDGET.json LEDGER
-            git diff --cached --quiet && return 0
-            git commit -q -m "referee ${{ github.run_number }} ($1)"
-            for i in 1 2 3; do
-              { git pull --rebase --autostash || { git rebase --abort; false; }; } && git push && return 0
-              sleep $((i * 5))
-            done
-            echo "Push failed after 3 attempts."; return 1
+            (
+              flock 9
+              git add -A BUDGET.json LEDGER runs/referee
+              git diff --cached --quiet && exit 0
+              git commit -q -m "referee $RUN ($1)"
+              for i in 1 2 3; do
+                { git pull --rebase --autostash || { git rebase --abort; false; }; } && git push && exit 0
+                sleep $((i * 5))
+              done
+              echo "Push failed after 3 attempts."; exit 1
+            ) 9>"$LOCK"
           }
+          # Run 21 died 2.5 hours into a claim with nothing committed: no
+          # verdict, no log, no spend record. So every 5 minutes, push what
+          # the harness has written so far -- the per-pass progress file, the
+          # per-turn transcripts, BUDGET.json, and a heartbeat with memory
+          # use -- to a side branch. It never touches main or the working
+          # tree, so it cannot conflict with commit(). If the job ends
+          # normally the branch is deleted; if it dies, the next job's
+          # "Recover dead runs" step brings it back.
+          START=$(date +%s)
+          snapshot() {
+            (
+              flock 9
+              {
+                echo "utc      $(date -u +%FT%TZ)"
+                echo "elapsed  $(( ($(date +%s) - START) / 60 )) min"
+                echo; free -m; echo; uptime; echo
+                ps -eo pid,rss,etime,args --sort=-rss | head -12
+              } > "$OUT/heartbeat.txt" 2>&1
+              idx=$(mktemp)
+              GIT_INDEX_FILE=$idx git read-tree HEAD
+              GIT_INDEX_FILE=$idx git add -A BUDGET.json LEDGER runs/referee
+              tree=$(GIT_INDEX_FILE=$idx git write-tree)
+              rm -f "$idx"
+              c=$(git commit-tree "$tree" -p HEAD -m "referee $RUN wip $(date -u +%H:%M)")
+              git push -q -f origin "$c:refs/heads/$WIP" || echo "snapshot push failed"
+            ) 9>"$LOCK"
+          }
+          snapshot
+          ( while sleep 300; do snapshot; done ) &
+          SNAP=$!
           N=1; [ "$CLAIM" = auto ] && N="${{ steps.gate.outputs.claims }}"
           # Claims took 65-85 minutes each in run 16, not the 30-50 this job
           # was sized for, and the 350-minute timeout killed claim 5 of 6
           # mid-proof. Do not start a claim that cannot finish: stop once
           # less than 90 minutes remain.
-          START=$(date +%s)
           for i in $(seq 1 "$N"); do
             ELAPSED=$(( ($(date +%s) - START) / 60 ))
             if [ "$ELAPSED" -gt 260 ]; then
@@ -158,6 +222,9 @@ jobs:
               || echo "referee exited non-zero on pass $i/$N"
             commit "$CLAIM $i/$N"
           done
+          kill "$SNAP" 2>/dev/null || true
+          # Everything is on main now; the side branch is only for a dead job.
+          commit "$CLAIM done" && git push -q origin --delete "$WIP" || true
 
       - name: Commit verdicts
         if: always() && steps.gate.outputs.go == 'true'
@@ -165,7 +232,7 @@ jobs:
           set -euo pipefail
           git config user.name "chomp-harness"
           git config user.email "noreply@github.com"
-          git add -A BUDGET.json LEDGER
+          git add -A BUDGET.json LEDGER runs/referee
           git diff --cached --quiet && exit 0
           git commit -m "referee ${{ github.run_number }} (${{ steps.gate.outputs.claim }})"
           for i in 1 2 3; do

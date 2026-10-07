@@ -371,6 +371,94 @@ def test_referee_keeps_every_failed_attempt():
     print("  referee: two failed attempts, two files, attempts=2")
 
 
+def test_referee_resumes_a_dead_run():
+    """Run 21 died mid-claim and lost everything. A finished pass survives in
+    the progress file, the transcript is written turn by turn, and the next
+    run of the same submission reuses the pass instead of paying again."""
+    import os
+    import tempfile
+    from harness import make_refbox
+    from harness import referee as R
+    from harness.orclient import Reply
+
+    calls = []
+
+    def dying_chat(self, messages, **kw):
+        calls.append(kw.get("temperature"))
+        if kw.get("temperature") == 0.8:
+            raise KeyboardInterrupt("runner lost")       # not an Exception
+        self.budget.charge(0.01, kw.get("tag", ""))
+        return Reply('{"disposition": "accept"}', [], 0.01, 10, 10, 0, "stop")
+
+    def fine_chat(self, messages, **kw):
+        calls.append(kw.get("temperature"))
+        self.budget.charge(0.01, kw.get("tag", ""))
+        return Reply('{"disposition": "accept"}', [], 0.01, 10, 10, 0, "stop")
+
+    orig_chat, orig_box = R.OpenRouter.chat, make_refbox.build_box
+    make_refbox.build_box = lambda root, claim, box, **kw: (box, [])
+    os.environ.setdefault("OPENROUTER_API_KEY", "test-key")
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            root = _referee_root(Path(d))
+            prog = R._progress_path(root, "C0001")
+            R.OpenRouter.chat = dying_chat
+            try:
+                R.referee(root, "C0001")
+                assert False, "the fake runner should have died"
+            except KeyboardInterrupt:
+                pass
+            saved = json.loads(prog.read_text(encoding="utf-8"))
+            assert [v["disposition"] for v in saved["verdicts"]] == ["accept"]
+            logs = sorted((root / "runs" / "referee").rglob("*.jsonl"))
+            assert [p.name for p in logs] == ["C0001.t0.3.jsonl", "C0001.t0.8.jsonl"]
+            assert 'disposition' in logs[0].read_text(encoding="utf-8")
+
+            calls.clear()
+            R.OpenRouter.chat = fine_chat
+            report = R.referee(root, "C0001")
+            assert calls == [0.8], calls                 # t=0.3 was reused
+            assert report["final"] == "accept", report
+            assert "_resumed_from_run" in report["verdicts"][0]
+            assert report["spend"] == 0.02, report["spend"]
+            assert not prog.exists()
+
+            # A changed submission must not reuse an old pass.
+            R._write_json(prog, saved)
+            Ledger(root / "LEDGER").set_status("C0001", "open", "test")
+            (root / "LEDGER" / "referee" / "C0001.json").unlink()
+            ref = R._ref(Ledger(root / "LEDGER").resolved()["C0001"])
+            (root / ref).write_text("a different proof", encoding="utf-8")
+            calls.clear()
+            R.referee(root, "C0001")
+            assert calls == [0.3, 0.8], calls
+    finally:
+        R.OpenRouter.chat, make_refbox.build_box = orig_chat, orig_box
+    print("  referee: dead pass saved, transcript on disk, resumed once")
+
+
+def test_sandbox_memory_cap_and_reap():
+    """A runaway allocation fails inside the command, not on the runner, and
+    background jobs do not outlive reap()."""
+    import os
+    import time
+    if os.name != "posix":
+        return
+    box = Path(tempfile.mkdtemp(prefix="chomp-test-box-"))
+    out = tools.dispatch("bash", {"command": "python3 -c 'bytearray(%d)'"
+                                  % int((tools.SANDBOX_MEM_GB + 1) * 2**30)},
+                         box, sandbox=True)
+    assert "MemoryError" in out, out
+    tools.dispatch("bash", {"command": "nohup sleep 97 >/dev/null 2>&1 &"},
+                   box, sandbox=True)
+    tools.reap()
+    time.sleep(0.2)
+    ps = subprocess.run(["ps", "-eo", "args"], capture_output=True,
+                        text=True).stdout
+    assert "sleep 97" not in ps, "a background job survived reap()"
+    print("  sandbox: memory cap bites, reap() kills background jobs")
+
+
 if __name__ == "__main__":
     before = _real_state()
     for fn in [
@@ -388,6 +476,8 @@ if __name__ == "__main__":
         test_referee_queue_and_dedup,
         test_referee_keeps_every_failed_attempt,
         test_referee_asks_again_when_reply_does_not_parse,
+        test_referee_resumes_a_dead_run,
+        test_sandbox_memory_cap_and_reap,
     ]:
         print(f"\n{fn.__name__}")
         fn()

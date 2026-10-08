@@ -1,0 +1,62 @@
+{
+  "claim": "C0060",
+  "agreed": true,
+  "final": "accept",
+  "sandboxed": true,
+  "restated": "Let f(q,r) be defined by the Brouwer recurrence (MISSION section 2). Write d_n=f(n,n), D_{<n}={d_a : 0<=a<n}, R_n={f(n,b) : 0<=b<n}, delta_n=#{a<n : d_a>d_n}, and c_n=|(R_n \\ D_{<n}) cap [1,d_n)|. Then for every n>=1, d_n = n + 1 - delta_n + c_n exactly. This is an exact identity; it claims no bound.",
+  "ledger_statement": "EXACT MEX-SANDWICH IDENTITY (unconditional; an identity, no bound claimed). With d_n=f(n,n), D_{<n}={d_a:a<n}, R_n={f(n,b):b<n}, delta_n=#{a<n: d_a>d_n}, c_n=|(R_n \\ D_{<n}) cap [1,d_n)|: for every n>=1, d_n = n+1-delta_n+c_n. Proof: (n,n) is a mex cell because f(n-1,n)=d_{n-1}>n-1 (Sheiner L4.1 = #G07 s8.3), with mex set D_{<n} u R_n; the d_a are distinct since d_n is not in D_{<n}; R_n subset [1,d_n) by Sheiner L4.1 + L2.3(a); counting [1,d_n) gives d_n-1 = (n-delta_n)+c_n. Premise (P) of the earlier version is now proved, not assumed.",
+  "submission_leaks": [],
+  "escape_attempts_blocked": 1,
+  "spend": 0.0802,
+  "run": "23",
+  "transcripts": "runs/referee/run-23/",
+  "verdicts": [
+    {
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": "No gap found. Each step follows from the recurrence plus the two explicitly stated inputs (S4.1, S2.3a); the load-bearing branch analysis (d_{n-1} >= n kills branch 2 at (n,n)) is correct even at n = 1, and the counting step in Step 3 is a disjoint split of [1, d_n) justified exactly by Step 1(2) and Step 2 distinctness. Minor bookkeeping: the metadata says '(none cited)' while the proof prints two Sheiner lemmas as inputs; their statements are given and were verified computationally, so this is not a mathematical gap.",
+      "counterexample_search": {
+        "range_checked": "identity and both input lemmas (S4.1, S2.3a) and premise d_{n-1} >= n: n = 1..8000 via GROUND_TRUTH solver table (qmax = rmax = 8000), n = 1..600 via independent reimplementation of the recurrence; boundary n = 1 verified by hand; r = 120 anomalous column and stale/live rows exercised via R_n for 120 < n <= 8000",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "arXiv API: all:\"chomp\" AND all:\"mex\"",
+          "arXiv API: abs:\"chomp\"",
+          "local corpus: mission text, census_50000.tsv"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "No bound is produced and none is claimed: the submission states 'This is an exact identity. It asserts no bound and makes no effectivity claim.' All quantities (delta_n, c_n) are computable from the recurrence, so the identity is effective as a computable rewriting of d_n, but the proof yields no computable bound on N(r) \u2014 by its own statement it is not an attempt at the effectivity target, so the effectivity trap does not apply (no existence-only constant is passed off as a bound).",
+      "confidence": "high",
+      "_temperature": 0.3,
+      "_spend": 0.0302,
+      "_run": "23"
+    },
+    {
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": "No non-following step found. Step 1's branch check is valid (f(n-1,n)=f(n-1,n-1)=d_{n-1}>=n since d_{n-1}>n-1 is an integer, so branch 2 does not fire at (n,n)); the mex set is exactly D_{<n} u R_n; Step 2 correctly combines (S2.3a) distinctness with (S4.1) maximality to get R_n subset [1,d_n) and pairwise distinct d_a; Step 3's count of [1,d_n) is exact and disjoint, giving d_n = n+1-delta_n+c_n. The only external inputs are the two precisely stated Sheiner lemmas (S4.1, S2.3a), which I verified numerically at every n<=10000; minor caveats: the submission's 'Results cited as already established: (none cited)' header conflicts with its declared Inputs (S4.1, S2.3a), and I could not bibliographically verify the arXiv citations (sandbox network refused) \u2014 a formatting gap, not a logical one.",
+      "counterexample_search": {
+        "range_checked": "all n with 1 <= n <= 10000, full diagonal and full rows R_n (n=10001 x 10001 solver table), plus an independent reimplementation of the Brouwer recurrence cross-checked against the solver on 0<=q,r<=2000 (0 mismatches); includes the delta_n=1 cases (first at n=52, e.g. d_51=89>d_52=88), small boundaries n=1..5 checked by hand, mex sets recomputed from scratch at 5 random n<=3000, and all known anomalous columns (periods 2,3,4,9 and the r=120 anomaly) as members of R_n; also re-checked the branch premise, (S4.1), (S2.3a), and the covering property [1,d_n) subset D_{<n} u R_n at every n",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [
+          "export.arxiv.org API: all:chomp AND all:3-row",
+          "arXiv/OEIS searches for mex-sandwich diagonal identity in 3-row Chomp"
+        ],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "No computable bound is produced \u2014 and none is claimed: the submission states verbatim 'This is an exact identity. It asserts no bound and makes no effectivity claim.' There is no effectivity trap here: every term (d_n, delta_n, c_n) is computable from the recurrence in finite time, so the identity is a genuine exact rewriting, but it yields no bound whatsoever on N(r) or on the period; it only reframes d_n - n = 1 + c_n - delta_n. For the project's stated target (an explicit computable bound on N(r)) this submission is a restatement, not a step with an effective conclusion.",
+      "confidence": "high",
+      "_temperature": 0.8,
+      "_spend": 0.05,
+      "_run": "23"
+    }
+  ]
+}

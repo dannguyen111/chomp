@@ -1,0 +1,39 @@
+{
+  "claim": "C0032",
+  "agreed": true,
+  "final": "unresolved",
+  "sandboxed": true,
+  "restated": true,
+  "run": "28",
+  "transcripts": "runs/referee/run-28/",
+  "_recovered": "2026-10-09, operator. The job lost its push to a rebase conflict (it checked out the commit from dispatch time, which was stale), and its last snapshot (18:33) predates the verdict. t=0.3 is rebuilt from its transcript; t=0.8 survives only as one truncated job-log line. Both are accept_with_gaps on the (FR) step-2 copy-branch exclusion, filled the same day.",
+  "verdicts": [
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": "The copy branch returns `f(q-1, r) < q`, which step 1 excludes.",
+      "gap_description": "Step 1 only establishes f(q,r) >= q; it does not exclude f(q-1,r) < q. For a >= 1 the exclusion is the reached hypothesis (L_{a-1} >= 1), and for a = 0 it needs f(r-1,r-1) >= r, which follows in one line from C0029's clause 'the unique p>r' (so f(c,c) >= c+1). The step is fillable, and I verified the copy branch is never taken at any reached (r,a) in the ranges checked, but the sentence as written does not follow from step 1.",
+      "counterexample_search": {
+        "range_checked": "machine (M) vs f(q,r)-q at all 87798 steps of rows 1<=r<=250 (q<=900) and on 41 sampled rows up to r=700 (q<=1600), incl. r=1, all stale rows' terminating 0, and the r=120 anomaly; (FR) decomposition checked against the raw recurrence at 23836 reached steps (r<=120, q<=500); Lemma S checked at 180552 (r,a)-pairs for r<=250; bounds B_c(x)<=c+1 and m_r<=r+1 checked over the full 700x1600 grid; stale/live conventions checked for all r<=700",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [],
+        "result": "novel",
+        "reference": null
+      },
+      "effectivity_check": "No computable bound is produced, by the submission's own design: the autonomy onset is the line 'sigma_r = max_{c<r} N(c) - r =: M_{r-1} - r', which depends on the preperiods N(c) that the proof explicitly declines to bound ('It becomes effective exactly to the extent that a computable bound on N(c) is supplied from elsewhere'). Only m_r <= r+1 and the state count q_r * 2^{m_r} are computable, and q_r again requires the N(c). Since the claim asserts an exact reformulation and no bound on N(r), this is a limitation relative to the mission target, not a defect of the claim as stated.",
+      "confidence": "high",
+      "_temperature": 0.3,
+      "_spend": 0.3545,
+      "_run": "28"
+    },
+    {
+      "disposition": "accept_with_gaps",
+      "gap_description": "Step 1 only controls f(q',r) for r <= q' < q; at a = 0 (the base case of (FR), needed for k_0 = B_r(0)) the co [TRUNCATED: only this job-log line survives]",
+      "_temperature": 0.8,
+      "_run": "28",
+      "_partial": true
+    }
+  ]
+}

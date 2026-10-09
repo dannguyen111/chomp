@@ -64,7 +64,13 @@ jobs:
     timeout-minutes: 350
 
     steps:
+      # The tip of the branch when the job STARTS, not github.sha. A run
+      # queued behind another in the `chomp` group otherwise checks out the
+      # commit from when it was queued, and then cannot rebase over what the
+      # earlier run pushed: referee run 28 lost its push that way (2026-10-09).
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       # `git add -A <path>` is fatal when a named path does not exist, and
       # every commit here names BUDGET.log.jsonl. Referee run 25 died on its

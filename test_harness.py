@@ -579,6 +579,16 @@ def test_dead_run_is_flagged_and_recovered():
             with contextlib.redirect_stdout(out):
                 digest.main(["--since", "1 hour ago"])
             assert "C0001: referee run 9 did not finish it" in out.getvalue()
+
+            # A pass from a run older than a verdict main already has is
+            # stale (run 26 cancelled on C0033, then run 27 finished it).
+            inv = main / "LEDGER" / "referee" / "invalid"
+            inv.mkdir(parents=True, exist_ok=True)
+            (inv / "C0002.unresolved.1.json").write_text(
+                json.dumps({"claim": "C0002", "run": "27"}), encoding="utf-8")
+            assert recover_referee.finished_here(main, "C0002", "26")
+            assert recover_referee.finished_here(main, "C0002", "27")
+            assert not recover_referee.finished_here(main, "C0002", "28")
         finally:
             os.chdir(here)
     print("  recovery: dead branch flagged, pass and legacy-shape spend recovered")

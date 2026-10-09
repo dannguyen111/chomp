@@ -64,14 +64,18 @@ def wip_refs() -> list[str]:
 
 
 def finished_here(root: Path, claim: str, run: str) -> bool:
-    """Did main already get this run's verdict on this claim?"""
+    """Did main already get a verdict on this claim from this run or a later
+    one? Either way the pass is stale: run 26 was cancelled with a progress
+    file on C0033, and run 27 then finished C0033."""
     ref = root / "LEDGER" / "referee"
     for f in [ref / f"{claim}.json", *(ref / "invalid").glob(f"{claim}.*.json")]:
         try:
-            if json.loads(f.read_text(encoding="utf-8")).get("run") == run:
-                return True
+            theirs = str(json.loads(f.read_text(encoding="utf-8")).get("run"))
         except (OSError, json.JSONDecodeError):
             continue
+        if theirs == run or (theirs.isdigit() and run.isdigit()
+                             and int(theirs) > int(run)):
+            return True
     return False
 
 

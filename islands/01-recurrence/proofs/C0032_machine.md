@@ -27,9 +27,15 @@ cited stale-row lemma makes the row constant from `q0`, hence stale. So `B_c(x)
 (MISSION s3) it is periodic from some point on. Let `p_c` be its least eventual
 period and `u_c` the least `x0 >= 0` with `B_c(x + p_c) = B_c(x)` for all
 `x >= x0`. Set `N(c) = c + u_c`. This is MISSION s4's `N(c)`, the least `q0`
-from which `f(q, c) - q` is exactly periodic (the onset does not depend on
-which eventual period is used). For row 0 it gives `u_0 = 0` and `N(0) = 0`,
-as above.
+from which `f(q, c) - q` is exactly periodic, because the onset does not
+depend on which eventual period is used. *Proof.* Any eventual period `P` is a
+multiple of `p_c` (both hold from some point, so `gcd(P, p_c)` does, and
+`p_c` is least). Let `x1` be the onset for `P`. `x1 <= u_c` since
+`p_c | P`. If `x1 < u_c`, put `y = u_c - 1 >= x1`. Then
+`B_c(y) = B_c(y + P) = B_c(y + p_c)`, the second equality because
+`y + p_c >= u_c` and `P - p_c` is a multiple of `p_c`. So `B_c` is
+`p_c`-periodic from `y`, contradicting the minimality of `u_c`. ∎ For row 0 it
+gives `u_0 = 0` and `N(0) = 0`, as above.
 
 So `N(c)` is defined for every row, and in both cases `u_c = N(c) - c` is the
 argument from which `B_c` is periodic (live) or undefined (stale). Existence is
@@ -74,8 +80,15 @@ and put `q = r + a`, so `q >= r` and `q >= 1`.
    triggers the copy branch, and inductively `f(q', r) = f(q0, r) < q'` for
    every `q' > q0`. So the cited stale-row lemma applies and gives
    `f(q0, r) = q0`, i.e. `f(q, r) = q`.
-2. *The mex branch is taken.* `r > q` is false. The copy branch returns
-   `f(q-1, r) < q`, which step 1 excludes. So `f(q, r) = mex_{>=1}(S)` with
+2. *The mex branch is taken.* `r > q` is false. The copy branch needs
+   `f(q-1, r) < q`, and that fails in both cases:
+   - `a >= 1`: `q - 1 = r + (a-1) >= r`, and `a - 1 < a` is reached, so
+     `f(q-1, r) - (q-1) = L_{a-1} >= 1`, i.e. `f(q-1, r) >= q`.
+   - `a = 0`: `q - 1 = r - 1 < r`, so by the first clause
+     `f(q-1, r) = f(r-1, r-1)`. The cited result's statement makes `f(q', r')`
+     the unique `p > r'`, so `f(r-1, r-1) >= r = q`.
+
+   So `f(q, r) = mex_{>=1}(S)` with
    `S = { F(x, r) : x < q } ∪ { f(q, b) : b < r }`.
 3. *Shift to a mex over `Z_{>=0}`.* By steps 1 and 2, `mex_{>=1}(S) >= q`, so
    `{1, ..., q-1} ⊆ S`. Hence `mex_{>=1}(S) = q + mex_{>=0}(S_q)` with

@@ -52,6 +52,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # `git add -A <path>` is fatal when a named path does not exist, and
+      # every commit here names BUDGET.log.jsonl. Referee run 25 died on its
+      # first snapshot when the file was briefly absent (2026-10-09).
+      - name: Ensure the budget log exists
+        run: touch BUDGET.log.jsonl
+
       - name: Gate on autopilot and budget
         id: gate
         run: |

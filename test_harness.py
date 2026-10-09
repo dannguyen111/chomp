@@ -481,6 +481,76 @@ def test_referee_fingerprint_and_unrun_searches():
     print("  referee: fingerprint covers the solver; unrun searches not recorded")
 
 
+def test_dead_run_is_flagged_and_recovered():
+    """A referee job that dies leaves referee-wip/run-<N> on origin. The digest
+    must flag it, and recover_referee must bring its pass and spend to main --
+    including a snapshot taken before the budget log moved out of BUDGET.json."""
+    import contextlib
+    import io
+    import os
+    from ops import digest, recover_referee
+
+    def git(cwd, *a):
+        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *a],
+                       cwd=cwd, check=True, capture_output=True)
+
+    here = os.getcwd()
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        git(d, "init", "-q", "--bare", "origin.git")
+        main, dead = d / "main", d / "dead"
+        git(d, "clone", "-q", str(d / "origin.git"), "main")
+        (main / "LEDGER" / "referee").mkdir(parents=True)
+        (main / "LEDGER" / "claims.jsonl").write_text("", encoding="utf-8")
+        (main / "BUDGET.json").write_text(
+            '{"cap": 30.0, "spent": 1.0, "calls": 1}', encoding="utf-8")
+        (main / "BUDGET.log.jsonl").write_text(
+            '{"t": 1, "tag": "a", "cost": 1.0}\n', encoding="utf-8")
+        git(main, "add", "-A"); git(main, "commit", "-qm", "main")
+        git(main, "push", "-q", "origin", "HEAD:main")
+
+        # The dead job: one finished pass and one unrecorded call, snapshotted
+        # in the old budget shape.
+        git(d, "clone", "-q", str(d / "origin.git"), "dead")
+        prog = dead / "LEDGER" / "referee" / "progress" / "C0001.json"
+        prog.parent.mkdir(parents=True)
+        prog.write_text(json.dumps({"claim": "C0001", "run": "9", "verdicts": [
+            {"_temperature": 0.3, "disposition": "accept"}]}), encoding="utf-8")
+        (dead / "BUDGET.json").write_text(json.dumps(
+            {"cap": 30.0, "spent": 1.5, "calls": 2, "log": [
+                {"t": 1, "tag": "a", "cost": 1.0},
+                {"t": 2, "tag": "referee/C0001/t0.3", "cost": 0.5}]}),
+            encoding="utf-8")
+        git(dead, "add", "-A"); git(dead, "commit", "-qm", "wip")
+        git(dead, "push", "-q", "origin", "HEAD:refs/heads/referee-wip/run-9")
+
+        os.chdir(main)
+        try:
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                digest.main(["--since", "1 hour ago"])
+            assert "referee-wip/run-9 exists" in out.getvalue(), out.getvalue()
+
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                recover_referee.main(["--root", str(main)])
+            assert "branch: referee-wip/run-9" in out.getvalue(), out.getvalue()
+            assert (main / "LEDGER/referee/progress/C0001.json").exists()
+            b = json.loads((main / "BUDGET.json").read_text(encoding="utf-8"))
+            assert b == {"cap": 30.0, "spent": 1.5, "calls": 2}, b
+            log = (main / "BUDGET.log.jsonl").read_text(encoding="utf-8").splitlines()
+            assert len(log) == 2 and json.loads(log[1])["cost"] == 0.5
+
+            # The recovered progress file is now flagged as unfinished work.
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                digest.main(["--since", "1 hour ago"])
+            assert "C0001: referee run 9 did not finish it" in out.getvalue()
+        finally:
+            os.chdir(here)
+    print("  recovery: dead branch flagged, pass and legacy-shape spend recovered")
+
+
 def test_sandbox_memory_cap_and_reap():
     """A runaway allocation fails inside the command, not on the runner, and
     background jobs do not outlive reap()."""
@@ -523,6 +593,7 @@ if __name__ == "__main__":
         test_referee_asks_again_when_reply_does_not_parse,
         test_referee_resumes_a_dead_run,
         test_referee_fingerprint_and_unrun_searches,
+        test_dead_run_is_flagged_and_recovered,
         test_sandbox_memory_cap_and_reap,
     ]:
         print(f"\n{fn.__name__}")

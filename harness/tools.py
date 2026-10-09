@@ -46,10 +46,27 @@ def _killpg(pgid: int) -> None:
         pass
 
 
+def _group_alive(pgid: int) -> bool:
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
 def reap() -> None:
     """Kill everything a sandboxed command left running."""
     while _GROUPS:
         _killpg(_GROUPS.pop())
+
+
+def _forget_finished() -> None:
+    """Drop groups with no members left. Once a group is empty its id can be
+    reused, and a later reap() must not kill whatever reused it."""
+    for g in [g for g in _GROUPS if not _group_alive(g)]:
+        _GROUPS.discard(g)
 
 SCHEMA = [
     {
@@ -275,6 +292,9 @@ def dispatch(name: str, args: dict, root: Path, *, sandbox: bool = False) -> str
                     p.kill()
                 p.communicate()
                 raise
+            finally:
+                if sandbox and posix:
+                    _forget_finished()
             out = stdout + (f"\n[stderr]\n{stderr}" if stderr else "")
             if p.returncode:
                 out += f"\n[exit {p.returncode}]"

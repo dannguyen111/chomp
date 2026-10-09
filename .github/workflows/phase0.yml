@@ -44,6 +44,7 @@ jobs:
           rm -rf /tmp/selftest && mkdir -p /tmp/selftest
           tar -c --exclude=.git . | tar -x -C /tmp/selftest
           cd /tmp/selftest
+          git init -q && git add -A     # _sandbox_root() runs git ls-files
           # test_harness.py is a unit test of the harness, not of the project
           # state: it asserts the first claim it writes gets id C0001 and that
           # the budget starts at zero. Give it the blank fixture it expects, or

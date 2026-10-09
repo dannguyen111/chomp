@@ -113,8 +113,9 @@ jobs:
       # A `referee-wip/run-<N>` branch left over from an earlier job means that
       # job died before it could commit (see the snapshot loop below). Bring
       # its passes, transcripts and spend onto main before refereeing, so a
-      # finished pass is reused rather than paid for twice and the budget
-      # gate counts what the dead run spent.
+      # finished pass is reused rather than paid for twice. The gate above has
+      # already run and did NOT see the dead run's spend; the per-claim budget
+      # check in the Referee step, which re-reads BUDGET.json, does.
       - name: Recover dead runs
         if: steps.gate.outputs.go == 'true'
         run: |
@@ -165,8 +166,10 @@ jobs:
             (
               flock 9
               git add -A BUDGET.json BUDGET.log.jsonl LEDGER runs/referee
-              git diff --cached --quiet && exit 0
-              git commit -q -m "referee $RUN ($1)"
+              git diff --cached --quiet || git commit -q -m "referee $RUN ($1)"
+              # Nothing staged is not the same as nothing to push: an earlier
+              # commit() whose push failed left its commit here, unpushed.
+              [ -z "$(git rev-list origin/main..HEAD)" ] && exit 0
               for i in 1 2 3; do
                 { git pull --rebase --autostash || { git rebase --abort; false; }; } && git push && exit 0
                 sleep $((i * 5))
@@ -224,7 +227,14 @@ jobs:
           done
           kill "$SNAP" 2>/dev/null || true
           # Everything is on main now; the side branch is only for a dead job.
-          commit "$CLAIM done" && git push -q origin --delete "$WIP" || true
+          # If the push failed, keep the branch -- it is the only copy the
+          # next run can recover from -- and fail the job so it is noticed.
+          if commit "$CLAIM done"; then
+            git push -q origin --delete "$WIP" || echo "could not delete $WIP"
+          else
+            echo "::error::verdicts committed locally but not pushed; $WIP kept for recovery"
+            exit 1
+          fi
 
       - name: Commit verdicts
         if: always() && steps.gate.outputs.go == 'true'
@@ -233,8 +243,8 @@ jobs:
           git config user.name "chomp-harness"
           git config user.email "noreply@github.com"
           git add -A BUDGET.json BUDGET.log.jsonl LEDGER runs/referee
-          git diff --cached --quiet && exit 0
-          git commit -m "referee ${{ github.run_number }} (${{ steps.gate.outputs.claim }})"
+          git diff --cached --quiet || git commit -m "referee ${{ github.run_number }} (${{ steps.gate.outputs.claim }})"
+          [ -z "$(git rev-list origin/main..HEAD)" ] && exit 0
           for i in 1 2 3; do
             { git pull --rebase --autostash || { git rebase --abort; false; }; } && git push && exit 0
             sleep $((i * 5))

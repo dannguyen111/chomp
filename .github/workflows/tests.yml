@@ -1,0 +1,49 @@
+name: tests
+
+# The harness tests, on Linux, on every push that touches code. Locally they
+# run on Windows, where the sandbox memory cap and reap() test returns early;
+# this is the only place that test actually runs. phase0.yml also runs the
+# suite, but it is manual and ran once.
+#
+# Not in the `chomp` concurrency group: it never writes to the repo.
+
+on:
+  push:
+    paths:
+      - "harness/**"
+      - "ops/**"
+      - "prompts/**"
+      - "test_harness.py"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      # test_harness.py writes to LEDGER and BUDGET, so it runs on a throwaway
+      # copy with the blank fixture it expects. The copy needs its own git
+      # index: _sandbox_root() lists tracked files with `git ls-files`.
+      - name: Harness self-test (throwaway copy)
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/selftest && mkdir -p /tmp/selftest
+          tar -c --exclude=.git . | tar -x -C /tmp/selftest
+          cd /tmp/selftest
+          git init -q && git add -A
+          : > LEDGER/claims.jsonl
+          echo '{"cap": 30.0, "spent": 0.0, "calls": 0}' > BUDGET.json
+          : > BUDGET.log.jsonl
+          git -c user.name=t -c user.email=t@t commit -qm fixture
+          python test_harness.py
+          cd "$GITHUB_WORKSPACE"
+          git diff --quiet || { echo "self-test leaked into the real tree"; git diff --stat; exit 1; }

@@ -54,7 +54,9 @@ def show(ref: str, path: str) -> str | None:
 
 
 def wip_refs() -> list[str]:
-    git("fetch", "-q", "origin",
+    # --prune: a branch deleted on origin after a clean finish must not
+    # linger here as a remote-tracking ref and be "recovered" again.
+    git("fetch", "-q", "--prune", "origin",
         f"+refs/heads/{PREFIX}*:refs/remotes/origin/{PREFIX}*", check=False)
     out = git("for-each-ref", "--format=%(refname:short)",
               f"refs/remotes/origin/{PREFIX}")

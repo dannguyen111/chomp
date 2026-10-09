@@ -20,8 +20,9 @@ What is carried over, and how:
   the same submission. Taken unless main already has that run's verdict for
   the claim, or a progress file with at least as many passes.
 - runs/referee/: transcripts and heartbeats, added if missing or longer.
-- BUDGET.json: spend entries main has not recorded are added to the log and to
-  `spent`, so the cap still counts money the dead run spent.
+- BUDGET.json / BUDGET.log.jsonl: spend entries main has not recorded are
+  appended to the log and added to `spent`, so the cap still counts money the
+  dead run spent.
 
 Usage: python -m ops.recover_referee [--dry-run]
 Prints what it recovered, and the branches it read, one per line, prefixed
@@ -138,27 +139,47 @@ def recover(root: Path, ref: str, dry: bool) -> list[str]:
         elif rel.endswith(".json") and not mine.exists():
             write(rel, text)              # a verdict main never received
 
-    # Spend.
+    # Spend. The per-call log is BUDGET.log.jsonl; a snapshot taken before
+    # 2026-10-09 still carries it inline as BUDGET.json's `log`.
     theirs = show(ref, "BUDGET.json")
     if theirs:
         b_path = root / "BUDGET.json"
+        l_path = root / "BUDGET.log.jsonl"
         mine_b = json.loads(b_path.read_text(encoding="utf-8"))
         their_b = json.loads(theirs)
-        seen = {(e.get("t"), e.get("tag")) for e in mine_b.get("log", [])}
-        extra = [e for e in their_b.get("log", [])
-                 if (e.get("t"), e.get("tag")) not in seen]
+        mine_log = mine_b.get("log", []) + _jsonl(
+            l_path.read_text(encoding="utf-8") if l_path.exists() else "")
+        their_log = their_b.get("log", []) + _jsonl(
+            show(ref, "BUDGET.log.jsonl") or "")
+        seen = {(e.get("t"), e.get("tag")) for e in mine_log}
+        extra = sorted((e for e in their_log
+                        if (e.get("t"), e.get("tag")) not in seen),
+                       key=lambda e: e.get("t", 0))
         if extra:
-            mine_b["log"] = sorted(mine_b.get("log", []) + extra,
-                                   key=lambda e: e.get("t", 0))
+            mine_b.pop("log", None)
             mine_b["spent"] = round(mine_b["spent"]
                                     + sum(e.get("cost", 0) for e in extra), 6)
             mine_b["calls"] = mine_b.get("calls", 0) + len(extra)
             print(f"  {ref}: {len(extra)} unrecorded calls, "
                   f"${sum(e.get('cost', 0) for e in extra):.4f}")
-            done.append("BUDGET.json")
+            done += ["BUDGET.json", "BUDGET.log.jsonl"]
             if not dry:
+                old = [] if l_path.exists() else mine_log
+                with l_path.open("a", encoding="utf-8") as f:
+                    for e in old + extra:
+                        f.write(json.dumps(e) + "\n")
                 b_path.write_text(json.dumps(mine_b, indent=2), encoding="utf-8")
     return done
+
+
+def _jsonl(text: str) -> list[dict]:
+    out = []
+    for line in text.splitlines():
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
 
 
 def main(argv=None) -> int:

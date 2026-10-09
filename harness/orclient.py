@@ -45,13 +45,31 @@ class Reply:
 
 class Budget:
     """Persistent spend ledger. Survives crashes; refuses to be talked into
-    going over."""
+    going over.
+
+    BUDGET.json holds only the totals the gates read. The per-call record goes
+    to BUDGET.log.jsonl, one line per call: append-only, so it union-merges
+    like the claims ledger, and it no longer rewrites a 300 KB file per call.
+    """
 
     def __init__(self, path: str | os.PathLike = "BUDGET.json", cap: float = 30.0):
         self.path = Path(path)
+        self.log_path = log_path_for(self.path)
         self.cap = cap
         if not self.path.exists():
-            self._write({"cap": cap, "spent": 0.0, "calls": 0, "log": []})
+            self._write({"cap": cap, "spent": 0.0, "calls": 0})
+        else:
+            self._migrate()
+
+    def _migrate(self) -> None:
+        """Move an inline `log` array (the pre-2026-10-09 shape) to the log file."""
+        d = self._read()
+        if "log" not in d:
+            return
+        with self.log_path.open("a", encoding="utf-8") as f:
+            for e in d.pop("log"):
+                f.write(json.dumps(e) + "\n")
+        self._write(d)
 
     def _read(self) -> dict:
         return json.loads(self.path.read_text(encoding="utf-8"))
@@ -77,12 +95,22 @@ class Budget:
                 f"${self.remaining:.2f} left (need ${headroom:.2f})"
             )
 
-    def charge(self, cost: float, tag: str) -> None:
+    def charge(self, cost: float, tag: str, model: str | None = None) -> None:
         d = self._read()
         d["spent"] = round(d["spent"] + cost, 6)
         d["calls"] += 1
-        d["log"].append({"t": time.time(), "tag": tag, "cost": cost})
+        entry = {"t": time.time(), "tag": tag, "cost": cost}
+        if model:
+            entry["model"] = model
+        with self.log_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
         self._write(d)
+
+
+def log_path_for(path: str | os.PathLike) -> Path:
+    """BUDGET.json -> BUDGET.log.jsonl"""
+    p = Path(path)
+    return p.with_name(p.stem + ".log.jsonl")
 
 
 class OpenRouter:
@@ -160,7 +188,7 @@ class OpenRouter:
 
         usage = data.get("usage") or {}
         cost = float(usage.get("cost", 0.0))
-        self.budget.charge(cost, tag or model)
+        self.budget.charge(cost, tag or model, model)
 
         choice = data["choices"][0]
         msg = choice.get("message") or {}

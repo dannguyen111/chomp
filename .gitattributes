@@ -6,3 +6,4 @@
 # must both survive a rebase. Runs 18 and 19 lost two agreed accepts to a
 # conflict here (2026-10-06).
 LEDGER/claims.jsonl merge=union
+BUDGET.log.jsonl merge=union

@@ -116,7 +116,8 @@ SCHEMA = [
 
 # Paths the explorer may never write to. GROUND_TRUTH is read-only by mission
 # rule; if the solver is wrong the explorer files a claim, it does not patch.
-PROTECTED = ("GROUND_TRUTH", "MISSION.md", "prompts", "harness", "BUDGET.json")
+PROTECTED = ("GROUND_TRUTH", "MISSION.md", "prompts", "harness", "BUDGET.json",
+             "BUDGET.log.jsonl")
 
 
 def _resolve(root: Path, rel: str) -> Path:

@@ -40,7 +40,8 @@ def _sandbox_root() -> Path:
 
 def _real_state() -> str:
     h = hashlib.sha256()
-    for f in sorted((ROOT / "LEDGER").rglob("*")) + [ROOT / "BUDGET.json"]:
+    for f in sorted((ROOT / "LEDGER").rglob("*")) + [ROOT / "BUDGET.json",
+                                                    ROOT / "BUDGET.log.jsonl"]:
         if f.is_file():
             h.update(str(f.relative_to(ROOT)).encode() + f.read_bytes())
     return h.hexdigest()
@@ -190,6 +191,28 @@ def test_budget_hard_cap():
     else:
         raise AssertionError("cap not enforced")
     p.unlink()
+    b.log_path.unlink()
+
+
+def test_budget_log_is_separate_and_migrates():
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "BUDGET.json"
+        old = [{"t": 1.0, "tag": "explorer", "cost": 0.25},
+               {"t": 2.0, "tag": "referee", "cost": 0.5}]
+        p.write_text(json.dumps({"cap": 1.0, "spent": 0.75, "calls": 2,
+                                 "log": old}), encoding="utf-8")
+        b = Budget(p, cap=1.0)
+        assert "log" not in json.loads(p.read_text(encoding="utf-8"))
+        b.charge(0.125, "referee/C0001", "some/model")
+        summary = json.loads(p.read_text(encoding="utf-8"))
+        assert summary == {"cap": 1.0, "spent": 0.875, "calls": 3}, summary
+        lines = [json.loads(l) for l in
+                 (Path(d) / "BUDGET.log.jsonl").read_text(encoding="utf-8").splitlines()]
+        assert lines[:2] == old and lines[2]["model"] == "some/model"
+        assert abs(sum(e["cost"] for e in lines) - summary["spent"]) < 1e-9
+        Budget(p, cap=1.0)          # a second open must not duplicate the log
+        assert len((Path(d) / "BUDGET.log.jsonl").read_text().splitlines()) == 3
+    print("  budget: per-call log split out, legacy log migrated once")
 
 
 def test_session_loop_with_fake_model():
@@ -470,6 +493,7 @@ if __name__ == "__main__":
         test_tools_clip_runaway_output,
         test_prompt_ordering_and_fingerprint,
         test_budget_hard_cap,
+        test_budget_log_is_separate_and_migrates,
         test_session_loop_with_fake_model,
         test_referee_parse_survives_braces_in_prose,
         test_referee_parse_repairs_unescaped_quotes,
@@ -481,5 +505,5 @@ if __name__ == "__main__":
     ]:
         print(f"\n{fn.__name__}")
         fn()
-    assert _real_state() == before, "a test wrote to the real LEDGER/ or BUDGET.json"
+    assert _real_state() == before, "a test wrote to the real LEDGER/ or BUDGET"
     print("\nAll harness tests passed.")

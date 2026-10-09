@@ -49,10 +49,10 @@ jobs:
           # the budget starts at zero. Give it the blank fixture it expects, or
           # it fails on every run after Phase 0 seeds the real ledger.
           : > LEDGER/claims.jsonl
-          echo '{"cap": 30.0, "spent": 0.0, "calls": 0, "log": []}' > BUDGET.json
+          echo '{"cap": 30.0, "spent": 0.0, "calls": 0}' > BUDGET.json && : > BUDGET.log.jsonl
           python test_harness.py
           cd "$GITHUB_WORKSPACE"
-          git diff --quiet -- LEDGER islands BUDGET.json \
+          git diff --quiet -- LEDGER islands BUDGET.json BUDGET.log.jsonl \
             || { echo "self-test leaked into the real tree"; git diff --stat; exit 1; }
 
       - name: Build solver

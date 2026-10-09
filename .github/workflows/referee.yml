@@ -124,7 +124,7 @@ jobs:
           python -m ops.recover_referee | tee /tmp/recover.txt
           BRANCHES=$(sed -n 's/^branch: //p' /tmp/recover.txt)
           [ -n "$BRANCHES" ] || exit 0
-          git add -A BUDGET.json LEDGER runs/referee
+          git add -A BUDGET.json BUDGET.log.jsonl LEDGER runs/referee
           if ! git diff --cached --quiet; then
             git commit -q -m "referee ${{ github.run_number }}: recover $(echo $BRANCHES | tr '\n' ' ')"
             for i in 1 2 3; do
@@ -164,7 +164,7 @@ jobs:
           commit() {
             (
               flock 9
-              git add -A BUDGET.json LEDGER runs/referee
+              git add -A BUDGET.json BUDGET.log.jsonl LEDGER runs/referee
               git diff --cached --quiet && exit 0
               git commit -q -m "referee $RUN ($1)"
               for i in 1 2 3; do
@@ -194,7 +194,7 @@ jobs:
               } > "$OUT/heartbeat.txt" 2>&1
               idx=$(mktemp)
               GIT_INDEX_FILE=$idx git read-tree HEAD
-              GIT_INDEX_FILE=$idx git add -A BUDGET.json LEDGER runs/referee
+              GIT_INDEX_FILE=$idx git add -A BUDGET.json BUDGET.log.jsonl LEDGER runs/referee
               tree=$(GIT_INDEX_FILE=$idx git write-tree)
               rm -f "$idx"
               c=$(git commit-tree "$tree" -p HEAD -m "referee $RUN wip $(date -u +%H:%M)")
@@ -232,7 +232,7 @@ jobs:
           set -euo pipefail
           git config user.name "chomp-harness"
           git config user.email "noreply@github.com"
-          git add -A BUDGET.json LEDGER runs/referee
+          git add -A BUDGET.json BUDGET.log.jsonl LEDGER runs/referee
           git diff --cached --quiet && exit 0
           git commit -m "referee ${{ github.run_number }} (${{ steps.gate.outputs.claim }})"
           for i in 1 2 3; do

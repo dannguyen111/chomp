@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./BUDGET.log.jsonl)",
+      "Read(./runs/**/*.jsonl)",
+      "Read(./GROUND_TRUTH/**/*.tsv)"
+    ]
+  }
+}

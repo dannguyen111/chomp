@@ -130,7 +130,7 @@ jobs:
           set -euo pipefail
           git config user.name "chomp-harness"
           git config user.email "noreply@github.com"
-          git add -A BUDGET.json LEDGER islands runs
+          git add -A BUDGET.json BUDGET.log.jsonl LEDGER islands runs
           git diff --cached --quiet && exit 0
           git commit -m "session ${{ github.run_number }} (${{ steps.pick.outputs.island }})"
           # Another run may have landed while this one worked. Rebase and retry

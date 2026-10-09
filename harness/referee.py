@@ -570,7 +570,12 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     # Recording novelty_checked=True on the strength of "it did not say the
     # result was known" would be a lie in the ledger; novelty is the operator's
     # job (OPERATOR_NOTES.md).
-    novelty_checked = all(r == "novel" for r in results)
+    #
+    # And never clear a check the operator already did. Run 23 promoted C0060
+    # with novelty_checked=False, overwriting the operator's literature
+    # review of 2026-10-04 (ledger line 201) that had set it True.
+    novelty_checked = (all(r == "novel" for r in results)
+                       or led.resolved()[claim_id].novelty_checked)
 
     if final == "accept" and not known:
         led.set_status(claim_id, "proven", session,

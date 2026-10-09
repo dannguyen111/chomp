@@ -6,7 +6,7 @@ with no memory of the last one. The *science* lives in `LEDGER/`,
 what has been run, what broke, what to run next, and the conventions that were
 learned the expensive way.
 
-Last updated: **2026-10-05**. Sections 0 and the dated sections at the end are
+Last updated: **2026-10-09**. Sections 0 and the dated sections at the end are
 current. Sections 1-5 and the logs before 2026-10-04 are in `OPERATOR_NOTES_ARCHIVE.md`;
 the rules they established are condensed under *Standing rules* below.
 
@@ -29,6 +29,35 @@ Do not report any status from this file as current without doing that. The
 whole recurring failure of this project has been asserting things that were not
 checked; do not let the handoff be the next instance.
 
+In Claude Code, `/chomp-checkin` (`.claude/skills/chomp-checkin/`) does this and
+more: fetch, digest, a Haiku read of the diff, verified red flags, and ranked
+next actions. `.claude/CODEBASE_MAP.md` maps the code.
+
+### State at 2026-10-09
+
+- **Proven since 10-05:** C0028 (run 19, recovered from the log) and C0060 (run
+  23). C0060 is the mex rule at the diagonal cell, counted out. It is not stated
+  in Sheiner or #G07, but it is derivative of them (operator check, ledger
+  2026-10-09). Run 23 had overwritten that check with `novelty_checked=False`;
+  restored, and `referee.py` no longer clears an operator's flag.
+- **C0032 / C0033:** the text rewritten on 10-07 had never been refereed (the
+  `unresolved.2` verdicts quote the old text). Run 24 (scheduled, 10-09) is on
+  C0032 and a manual run is queued for C0033. Both dropped C0001 from
+  `depends_on` on 10-07. Correctly: C0001 is computational evidence, and no
+  step of the proof uses it.
+- **C0029** is fine at r=1. The proof handles it explicitly (`f(1,1)=3`,
+  `f(q,1)=2`, so `N(1)=3`); solver confirms.
+- **Budget split 10-09:** `BUDGET.json` is `{cap, spent, calls}` only; per-call
+  lines (now with `model`) go to `BUDGET.log.jsonl` (merge=union). `Budget()`
+  migrates an inline `log` on first open. BUDGET.json was briefly restored to
+  its old shape so run 24, which checked out the old tree, could rebase; the
+  next run on new code migrates it once.
+- **Referee hardening 10-09:** `novelty.searched` is moved to `_claimed_not_run`
+  (the sandbox has no network, and run 23 listed REFUSED queries as searched);
+  pass reuse is fingerprinted on solver/tools/model too; a failed final push
+  now fails the job and keeps `referee-wip/run-N`. `tests.yml` runs the suite
+  on Linux on every code push.
+
 ### The loop is autonomous as of 2026-09-27
 
 | when (UTC) | what | cap | where |
@@ -49,9 +78,11 @@ checked; do not let the handoff be the next instance.
 - Digest routine: `trig_01P8MeN3FDkBPRfW1xcHq6Wk`. It runs `ops/digest.py` and
   follows `ops/DIGEST_PROMPT.md`; both are in the repo so they can be fixed
   without touching the routine.
-- Budget was **$5.2492 of $30** at 2026-09-27T21:14Z, burning ~$1.72/day, so it
-  should exhaust around **2026-10-11**. Each workflow refuses to start below its
-  own cap, so the loop stops cleanly rather than dying mid-proof.
+- Budget was **$19.39 of $30** at 2026-10-09 ($10.61 left). With explorer
+  sessions paused since 10-04, only the referee spends: $0.08-$0.45 a day,
+  so weeks of runway, not the 10-11 exhaustion predicted on 09-27. Each
+  workflow refuses to start below its own cap, so the loop stops cleanly
+  rather than dying mid-proof.
 
 ### The single most important fact
 
@@ -168,7 +199,12 @@ this budget.
 
 - `test_harness.py` **pollutes the ledger and charges the budget** -- it appends
   claims, writes a corrupt line and a fake handoff. Run it in a throwaway copy
-  with a blanked ledger. Individual pure tests can be imported and called.
+  with a blanked ledger and budget, and `git init && git add -A` in the copy
+  (the tests call `git ls-files`). `tests.yml` does exactly this on push.
+  Individual pure tests can be imported and called.
+- A workflow run uses the tree it checked out. A format change pushed while a
+  run is in flight (as with the budget split on 10-09) conflicts at its
+  rebase. Check `gh run list` before pushing a change to `BUDGET*` or `LEDGER/`.
 - **Never hand-edit `LEDGER/claims.jsonl`.** Use `harness/ledger.py`. It is
   append-only and last-entry-per-id wins.
 - A `proven` status says the proof survived the gate. It says **nothing** about

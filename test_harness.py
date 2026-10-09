@@ -481,6 +481,39 @@ def test_referee_fingerprint_and_unrun_searches():
     print("  referee: fingerprint covers the solver; unrun searches not recorded")
 
 
+def test_promotion_keeps_operator_novelty_check():
+    """Run 23 promoted C0060 and wrote novelty_checked=False over the
+    operator's literature review. A promotion may set the flag, never clear it."""
+    import os
+    from harness import make_refbox
+    from harness import referee as R
+    from harness.orclient import Reply
+
+    def accept(self, messages, **kw):
+        self.budget.charge(0.01, kw.get("tag", ""))
+        return Reply('{"disposition": "accept", "novelty": {"result": '
+                     '"inconclusive", "searched": ["arXiv: chomp"]}}',
+                     [], 0.01, 10, 10, 0, "stop")
+
+    orig_chat, orig_box = R.OpenRouter.chat, make_refbox.build_box
+    R.OpenRouter.chat = accept
+    make_refbox.build_box = lambda root, claim, box, **kw: (box, [])
+    os.environ.setdefault("OPENROUTER_API_KEY", "test-key")
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            root = _referee_root(Path(d))
+            led = Ledger(root / "LEDGER")
+            led.set_status("C0001", "open", "operator", novelty_checked=True)
+            report = R.referee(root, "C0001")
+            assert report["final"] == "accept"
+            c = Ledger(root / "LEDGER").resolved()["C0001"]
+            assert c.status == "proven" and c.novelty_checked, c
+            assert report["verdicts"][0]["novelty"]["searched"] == []
+    finally:
+        R.OpenRouter.chat, make_refbox.build_box = orig_chat, orig_box
+    print("  referee: promotion kept the operator's novelty check")
+
+
 def test_dead_run_is_flagged_and_recovered():
     """A referee job that dies leaves referee-wip/run-<N> on origin. The digest
     must flag it, and recover_referee must bring its pass and spend to main --
@@ -593,6 +626,7 @@ if __name__ == "__main__":
         test_referee_asks_again_when_reply_does_not_parse,
         test_referee_resumes_a_dead_run,
         test_referee_fingerprint_and_unrun_searches,
+        test_promotion_keeps_operator_novelty_check,
         test_dead_run_is_flagged_and_recovered,
         test_sandbox_memory_cap_and_reap,
     ]:

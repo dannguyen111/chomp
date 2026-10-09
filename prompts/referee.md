@@ -42,10 +42,13 @@ over the widest range you can afford. Test boundary and degenerate cases: `r = 0
 anomalous rows. Report the exact range you checked. If the claim survives, say so and say
 over what range — that is a finding, not a formality.
 
-**Pass 3 — Novelty.** Search arXiv, OEIS and the literature for the claimed result. This
-area has been active recently: a three-row uniqueness result appeared in May 2026 and a
-4×n computational study in April 2026, so recency is not a safe assumption. If you find
-the result already published, that is a rejection regardless of whether the proof is valid.
+**Pass 3 — Novelty.** If you have a working search tool, search arXiv, OEIS and the
+literature for the claimed result. If you do not (in a sandbox, network commands are
+refused), **do not try**: answer from what you already know, and leave `searched` empty.
+List only queries that actually returned results. This area has been active recently:
+a three-row uniqueness result appeared in May 2026 and a 4×n computational study in
+April 2026, so recency is not a safe assumption. If you know the result to be already
+published, that is a rejection regardless of whether the proof is valid; cite it.
 
 ## Verdict format
 
@@ -62,7 +65,7 @@ Emit exactly this JSON and nothing else:
     "counterexample": "the specific triple, or null"
   },
   "novelty": {
-    "searched": ["query strings you actually ran"],
+    "searched": ["queries that actually returned results; [] if you had no search tool"],
     "result": "novel | already known | inconclusive",
     "reference": "citation if already known, else null"
   },

@@ -460,6 +460,27 @@ def test_referee_resumes_a_dead_run():
     print("  referee: dead pass saved, transcript on disk, resumed once")
 
 
+def test_referee_fingerprint_and_unrun_searches():
+    """A saved pass is not reused once the solver changes, and a verdict
+    never records a search the sandbox refused."""
+    from harness import referee as R
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        (root / "GROUND_TRUTH").mkdir()
+        src = root / "GROUND_TRUTH" / "solver.cpp"
+        src.write_text("int main(){}", encoding="utf-8")
+        msgs = [{"role": "user", "content": "x"}]
+        a = R._fingerprint(msgs, root)
+        assert a == R._fingerprint(msgs, root)
+        src.write_text("int main(){return 1;}", encoding="utf-8")
+        assert a != R._fingerprint(msgs, root), "solver change kept the pass"
+    v = {"novelty": {"searched": ["arXiv API: chomp"], "result": "inconclusive"}}
+    R._strip_unrun_searches(v)
+    assert v["novelty"]["searched"] == []
+    assert v["novelty"]["_claimed_not_run"] == ["arXiv API: chomp"]
+    print("  referee: fingerprint covers the solver; unrun searches not recorded")
+
+
 def test_sandbox_memory_cap_and_reap():
     """A runaway allocation fails inside the command, not on the runner, and
     background jobs do not outlive reap()."""
@@ -501,6 +522,7 @@ if __name__ == "__main__":
         test_referee_keeps_every_failed_attempt,
         test_referee_asks_again_when_reply_does_not_parse,
         test_referee_resumes_a_dead_run,
+        test_referee_fingerprint_and_unrun_searches,
         test_sandbox_memory_cap_and_reap,
     ]:
         print(f"\n{fn.__name__}")

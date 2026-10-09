@@ -274,10 +274,37 @@ def _write_json(path: Path, obj) -> None:
     tmp.replace(path)      # atomic: a snapshot never sees half a file
 
 
-def _fingerprint(messages: list[dict]) -> str:
-    """What the referee was shown. A pass is reusable only for the same text."""
-    return hashlib.sha256(json.dumps(messages, sort_keys=True)
-                          .encode("utf-8")).hexdigest()[:16]
+# What the referee could do, besides what it was shown: the solver it tested
+# against, the sandbox it ran in, and the box it was handed. A pass judged
+# against a buggy solver must not be reused once the solver is fixed.
+# referee.py itself is left out on purpose -- the usual fix after a dead run
+# is to referee.py, and that is exactly when the saved pass should be reused.
+ENVIRONMENT = ("GROUND_TRUTH/solver.cpp", "GROUND_TRUTH/chomp.py",
+               "harness/tools.py", "harness/make_refbox.py")
+
+
+def _fingerprint(messages: list[dict], root: Path | None = None) -> str:
+    """A pass is reusable only for the same text, model and environment."""
+    h = hashlib.sha256(json.dumps(messages, sort_keys=True).encode("utf-8"))
+    h.update(REFEREE_MODEL.encode("utf-8"))
+    for rel in ENVIRONMENT if root else ():
+        p = root / rel
+        h.update(rel.encode("utf-8") + (p.read_bytes() if p.is_file() else b"-"))
+    return h.hexdigest()[:16]
+
+
+def _strip_unrun_searches(v: dict) -> None:
+    """The sandbox has no network, so no search the referee lists was run.
+
+    Run 23 (C0060) listed two arXiv queries under `novelty.searched`; the
+    transcript shows both came back REFUSED. A list like that in a verdict
+    file reads as a literature check that never happened. Keep what it
+    claimed, under a name that says so, and record that nothing was searched.
+    """
+    nov = v.get("novelty")
+    if isinstance(nov, dict) and nov.get("searched"):
+        nov["_claimed_not_run"] = nov["searched"]
+        nov["searched"] = []
 
 
 class _Transcript:
@@ -342,7 +369,7 @@ def referee(root: Path, claim_id: str, session: str = "referee",
     # it has to be applied here too or only the box would be clean.
     submitted = replace(claim, statement=restated) if restated else claim
 
-    fingerprint = _fingerprint(build_messages(root, submitted, proof, deps))
+    fingerprint = _fingerprint(build_messages(root, submitted, proof, deps), root)
     prog_path = _progress_path(root, claim_id)
     reusable: dict[float, dict] = {}
     if prog_path.exists():
@@ -475,6 +502,7 @@ def referee(root: Path, claim_id: str, session: str = "referee",
                  # diagnosed from the verdict file instead of guessed at.
                  "_finish_reason": reply.finish_reason,
                  "_raw_tail": reply.text[-2000:]}
+        _strip_unrun_searches(v)
         v["_temperature"] = temp
         v["_spend"] = round(budget.spent - pass_start, 4)
         v["_run"] = _run_id()

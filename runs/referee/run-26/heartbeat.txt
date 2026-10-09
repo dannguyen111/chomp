@@ -1,0 +1,21 @@
+utc      2026-10-09T17:04:39Z
+elapsed  0 min
+
+               total        used        free      shared  buff/cache   available
+Mem:           15989        1048       12713          45        2593       14941
+Swap:           3071           0        3071
+
+ 17:04:39 up 5 min,  0 user,  load average: 0.17, 0.11, 0.05
+
+    PID   RSS     ELAPSED COMMAND
+   1869 149196      05:10 /tmp/provjobd2964773682
+   1990 129136      00:04 /home/runner/actions-runner/cached/2.337.0/bin/Runner.Worker spawnclient 142 145
+   1969 95980       00:06 /home/runner/actions-runner/cached/2.337.0/bin/Runner.Listener run
+   1067 71944       05:18 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+    800 52064       05:19 php-fpm: master process (/etc/php/8.3/fpm/php-fpm.conf)
+    944 45764       05:19 /usr/bin/containerd
+    223 43684       05:25 /sbin/multipathd -d -s
+   1197 38380       05:18 /usr/bin/python3 -u bin/WALinuxAgent-2.16.0.2-py3.12.egg -run-exthandlers
+    837 31888       05:19 /usr/bin/python3 -u /usr/sbin/waagent -daemon
+   1052 21564       05:18 php-fpm: pool www
+   1049 21560       05:18 php-fpm: pool www

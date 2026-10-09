@@ -1,0 +1,55 @@
+{
+  "claim": "C0033",
+  "agreed": true,
+  "final": "unresolved",
+  "sandboxed": true,
+  "restated": "Let f(q,r) be defined by the Brouwer recurrence (MISSION section 2), B_c(x)=f(c+x,c)-(c+x) when f(c+x,c)>=c+x (undefined otherwise). For each row c let p_c be its eventual period (p_c=1 if row c has only finitely many P-positions [p,q,c] with p>=q) and N(c) its preperiod as in MISSION, with N(c) = 1 + the last such q for a row with finitely many. For r>=1 let q_r = lcm{p_c : c<r}, sigma_r = max_{c<r} N(c) - r (the index set c<r always contains c=0, so both are finite; at r=1, q_1=p_0 and sigma_1=N(0)-1), and V''(a) = union over c<r of {B_c(a+r-c)} (defined values only). Then a -> V''(a) is q_r-periodic for all a >= max(sigma_r,0). This lemma claims no bound on any N(c).",
+  "ledger_statement": "DETERMINISM ONSET (structural; no bound claimed). For every r>=1, V''(a) is q_r-periodic for all a >= max(sigma_r,0), sigma_r := max_{c<r} N(c) - r, where for a stale row N(c) is 1 + the last q with a P-position [p,q,c], p>=q. Proof componentwise: V''_{r,c}(a)=B_c(a+r-c) is evaluated at x>=u_c=N(c)-c iff a>=N(c)-r, where B_c is p_c-periodic (live c) or undefined (stale c). Hence the merged-trail machine is autonomous from a=max(sigma_r,0). sigma_r is expressed through the N(c), c<r; the lemma does not bound them.",
+  "submission_leaks": [],
+  "escape_attempts_blocked": 1,
+  "spend": 0.1407,
+  "run": "27",
+  "transcripts": "runs/referee/run-27/",
+  "verdicts": [
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": null,
+      "gap_description": "No non-following step found in the line-by-line check: the (FR) derivation (mex shift needs q>=1, correctly scoped to r>=1), the two decay identities in Lemma M (V'(a+1)=dec(V'(a)), T_{a+1}=dec(T_a)\u222a{L_a-1}), the [0,m_r-1] invariant, and Lemma S's componentwise onset at \u03c3_r all follow, and the quantifier structure is honest (\u03c3_r depends only on N(c) for c<r; no bound on N(r) is claimed or smuggled in). However, the run was stopped before the computational passes: I did not execute the solver-based counterexample search or the numerical validation, and the cited dependencies [C0029] and [C0032] were taken on trust, so I cannot fully certify the submission; confidence set low accordingly.",
+      "counterexample_search": {
+        "range_checked": "hand-checks only: r=1 boundary (V''(a)={1}, \u03c3_1=-1, q_1=1), row 0 convention (B_0\u22611, N(0)=0), stale-row convention consistency (N(c)=q0+1=1+last q), live-row N(c)=c+u_c matching MISSION's N; solver runs not executed before the run was stopped",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "The submission does NOT produce a computable bound on N(r), and does not claim to: 'It does not bound them, and it does not bound `N(r)`. It becomes effective exactly to the extent that a computable bound on `N(c)` is supplied from elsewhere.' The onset constant \u03c3_r = max_{c<r} N(c) - r is only as computable as the preperiods N(c), which are asserted to exist (via Byrnes) without effective bounds; the state-space bound q_r\u00b72^{m_r} with m_r<=r+1 is computable but useless for N(r) without a computable \u03c3_r. So the lemma is an exact reformulation, not an effective result on its own; it is not circular within its own statement, but it does not advance THE TARGET except as scaffolding for a future bound on N(c).",
+      "confidence": "low",
+      "_temperature": 0.3,
+      "_spend": 0.0581,
+      "_run": "27"
+    },
+    {
+      "disposition": "accept_with_gaps",
+      "first_gap_line": "(the onset does not depend on which eventual period is used)",
+      "gap_description": "The parenthetical assertion that the onset of periodicity is independent of which eventual period p is used is stated without proof and is false for general sequences (e.g. 1,2,1,2,3,3,3,... has least-period-1 onset 4 but period-2 onset 0); it is needed only to make the stated convention N(c)=c+u_c coincide with MISSION's N(c) and is not load-bearing for Lemma S, which needs only that B_c is p_c-periodic from u_c. Second, I did not finish the computational pass: I verified the recurrence table and the census descriptors, and checked the algebra of (FR), the two decay identities of Lemma M and the componentwise argument of Lemma S line by line and found them sound (including the invariant, which is not circular since T_a's elements L_{a-i}-i <= m_r-1 follow from the machine bound k <= m_r), but I did not re-run the claimed large-scale machine-vs-solver validation (rows to r<=300, 45905 steps) before being stopped, so the numerical evidence is unverified by me.",
+      "counterexample_search": {
+        "range_checked": "small grid q,r <= 13 from the solver, columns r = 2 and r = 5, census descriptors for r <= 50000 read but not re-derived; Lemma M/S not re-run against the solver at scale",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "No computable bound is produced. The onset constant sigma_r = max_{c<r} N(c) - r is defined through the preperiods N(c), c<r, which are only known to exist (Byrnes), and the submission says so explicitly: 'sigma_r is defined through the preperiods N(c) ... It does not bound them, and it does not bound N(r). It becomes effective exactly to the extent that a computable bound on N(c) is supplied from elsewhere.' So the machine has an explicit start time only relative to uncomputable inputs; for r = 1000 a reader cannot evaluate sigma_r. This is honestly disclosed in the claim statement ('This lemma claims no bound on any N(c)'), so it is a correct non-effective structural lemma rather than a solution of the stated target; it is a reformulation, not an effective bound on N(r).",
+      "confidence": "low",
+      "_temperature": 0.8,
+      "_spend": 0.0826,
+      "_run": "27"
+    }
+  ]
+}

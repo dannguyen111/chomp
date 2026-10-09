@@ -20,6 +20,21 @@ from `q0 = N(c) - 1` with value `q0` (the cited stale-row lemma). For
 second row `q`. So `B_c(x)` is **undefined** there, and so is every
 `V''_{r,c}` component that evaluates it.
 
+**Convention for live rows.** A row `c` with infinitely many such P-positions
+has `f(q, c) > q` for every `q >= c`: if `f(q0, c) <= q0` for some `q0`, the
+cited stale-row lemma makes the row constant from `q0`, hence stale. So `B_c(x)
+>= 1` is defined for every `x >= 0`, and by Byrnes' eventual periodicity
+(MISSION s3) it is periodic from some point on. Let `p_c` be its least eventual
+period and `u_c` the least `x0 >= 0` with `B_c(x + p_c) = B_c(x)` for all
+`x >= x0`. Set `N(c) = c + u_c`. This is MISSION s4's `N(c)`, the least `q0`
+from which `f(q, c) - q` is exactly periodic (the onset does not depend on
+which eventual period is used). For row 0 it gives `u_0 = 0` and `N(0) = 0`,
+as above.
+
+So `N(c)` is defined for every row, and in both cases `u_c = N(c) - c` is the
+argument from which `B_c` is periodic (live) or undefined (stale). Existence is
+all that is used; nothing here bounds `N(c)`.
+
 Notation. Fix the third row `r >= 1`. For `c < r`:
 
 ```
@@ -151,7 +166,7 @@ as `V''` is `q_r`-periodic. By the invariant there are at most
   σ_r = max_{c<r} N(c) - r =: M_{r-1} - r,      M_{r-1} = max_{c<r} N(c).
 ```
 
-`N(c)` follows the stale-row convention above. At `r = 1` the max and lcm are
+`N(c)` follows the stale-row and live-row conventions above. At `r = 1` the max and lcm are
 over `c < 1`, i.e. only `c = 0`: `σ_1 = N(0) - 1 = -1` and `q_1 = p_0 = 1`.
 Indeed `V''(a) = { B_0(a+1) } = {1}` is constant. (With an empty index set the
 conventions `max ∅ = -∞` and `lcm ∅ = 1` would apply, but `c = 0 < r` always

@@ -1,0 +1,55 @@
+{
+  "claim": "C0033",
+  "agreed": true,
+  "final": "accept",
+  "sandboxed": true,
+  "restated": "Let f(q,r) be defined by the Brouwer recurrence (MISSION section 2), B_c(x)=f(c+x,c)-(c+x) when f(c+x,c)>=c+x (undefined otherwise). For each row c let p_c be its eventual period (p_c=1 if row c has only finitely many P-positions [p,q,c] with p>=q) and N(c) its preperiod as in MISSION, with N(c) = 1 + the last such q for a row with finitely many. For r>=1 let q_r = lcm{p_c : c<r}, sigma_r = max_{c<r} N(c) - r (the index set c<r always contains c=0, so both are finite; at r=1, q_1=p_0 and sigma_1=N(0)-1), and V''(a) = union over c<r of {B_c(a+r-c)} (defined values only). Then a -> V''(a) is q_r-periodic for all a >= max(sigma_r,0). This lemma claims no bound on any N(c).",
+  "ledger_statement": "DETERMINISM ONSET (structural; no bound claimed). For every r>=1, V''(a) is q_r-periodic for all a >= max(sigma_r,0), sigma_r := max_{c<r} N(c) - r, where for a stale row N(c) is 1 + the last q with a P-position [p,q,c], p>=q. Proof componentwise: V''_{r,c}(a)=B_c(a+r-c) is evaluated at x>=u_c=N(c)-c iff a>=N(c)-r, where B_c is p_c-periodic (live c) or undefined (stale c). Hence the merged-trail machine is autonomous from a=max(sigma_r,0). sigma_r is expressed through the N(c), c<r; the lemma does not bound them.",
+  "submission_leaks": [],
+  "escape_attempts_blocked": 1,
+  "spend": 0.1908,
+  "run": "29",
+  "transcripts": "runs/referee/run-29/",
+  "verdicts": [
+    {
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": "No non-following step found. The (FR) derivation, the two decay identities of Lemma M, the invariant, and the componentwise onset argument of Lemma S were each checked by hand and independently recomputed from the recurrence over ~80k steps with zero violations. The only blemish is a mis-attribution (the constancy of f(q,c) from q0 is attributed to the cited stale-row lemma, whose statement presupposes staleness; the needed direction is in fact proven by direct copy-branch induction in the same document, FR derivation step 1), which is cosmetic.",
+      "counterexample_search": {
+        "range_checked": "rows 1 <= r <= 300 against raw solver values (q <= 700, all a in range incl. boundaries r=1,2 and a=0), plus census-based exact tails for r <= 50000: exhaustive r <= 2000, stride-499 sample to r = 50000, and all anomalous period-6/8/9 rows (6541, 8767, 11036, 18583, 18718, 28109, 33597, 46110) with neighborhoods; degenerate cases: stale rows 1,3,4,... in c-positions (eventually constant), live row 120 (alternating B_c) in c-position, r=1 (sigma_1=-1), rows with sigma_r<0",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [],
+        "result": "novel",
+        "reference": null
+      },
+      "effectivity_check": "No computable bound is produced, and none is claimed. The onset constant is produced at the line \"sigma_r = max_{c<r} N(c) - r =: M_{r-1} - r\" (Lemma S), which is defined in terms of the preperiods N(c) that the proof explicitly leaves unbounded (\"It becomes effective exactly to the extent that a computable bound on N(c) is supplied from elsewhere\"). sigma_r is therefore not evaluable for r = 1000 from the proof alone. This is not the circular effectivity trap: the submission asserts only the conditional structural statement (given N(c), p_c for c < r, V'' is q_r-periodic from max(sigma_r,0)) and conspicuously does not reassert a bound on N(r); the statement is a true, verified-sharp reduction, not a pretended effective bound.",
+      "confidence": "high",
+      "_temperature": 0.3,
+      "_spend": 0.0991,
+      "_run": "29"
+    },
+    {
+      "disposition": "accept",
+      "first_gap_line": null,
+      "gap_description": "No non-following step: (FR), Lemma M and Lemma S all follow as written. Two cosmetic elisions were filled and verified: 'So B_c is p_c-periodic from y' needs the point y = u_c-1 added to the p_c-periodicity on [u_c, infty), and 'x1 <= u_c since p_c | P' presumes x1 is the least onset for P. The only deficiency is scope, not validity: the submission proves an exact reformulation and produces no bound on N(r), as it explicitly states.",
+      "counterexample_search": {
+        "range_checked": "independent recomputation of the MISSION recurrence vs solver on q,r <= 500 (q <= 1200): 0 mismatches; (FR)/machine/invariant over 227556 reached steps, rows r = 1..500 incl. stale rows' terminating 0; claim a->V''(a) q_r-periodic from max(sigma_r,0) tested at true minimal onsets for every r <= 500, 422398 (r,a) pairs covering all a >= max(sigma_r,0) in range; component tests from exact census tails for r = 1..3000 exhaustive plus 2047 sampled/anomaly rows (all period-6/8/9 rows, r = 120 family) up to r = 50000, 293684005 component checks at a in {sigma, sigma+1, sigma+q_r-1, sigma+q_r, sigma+5q_r+3}; degenerate cases r = 1, r = 2, stale third rows r in {1,3,4,6,8,10}, r = 120 anomaly; census N(c) confirmed equal to the true minimal onset for all c <= 500; bound f(q,c) <= q+c+1 checked on all 600000+ table cells",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [],
+        "result": "novel",
+        "reference": null
+      },
+      "effectivity_check": "No computable bound on N(r) is produced. The only onset constant is 'sigma_r = max_{c<r} N(c) - r =: M_{r-1} - r', defined through the preperiods N(c), which the submission explicitly leaves unbounded ('This lemma claims no bound on any N(c).' and 'It becomes effective exactly to the extent that a computable bound on N(c) is supplied from elsewhere.'). sigma_r cannot be evaluated for r = 1000 from the statement of the proof, so the project's effectivity target is not met. Note, however, that this is not the circularity trap: no periodicity is assumed for row r itself. Moreover the proof's own line 'By the invariant there are at most q_r * 2^{m_r} states (tau; H) with H subset [0, m_r - 1]' (together with 'every defined B_c(x) <= c + 1, so m_r <= r + 1') is one derivation short of closing a computable recursion N(r) <= max_{c<r} N(c) + q_r*2^{m_r} + 1 and p_r <= q_r*2^{m_r}; that step is not carried out in the submission.",
+      "confidence": "high",
+      "_temperature": 0.8,
+      "_spend": 0.0917,
+      "_run": "29"
+    }
+  ]
+}

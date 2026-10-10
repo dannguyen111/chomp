@@ -1,0 +1,62 @@
+{
+  "claim": "C0024",
+  "agreed": true,
+  "final": "reject",
+  "sandboxed": true,
+  "restated": "Let f(q,r) be the unique p such that (p,q,r) is a P-position of 3-row Chomp, defined by the Brouwer recurrence; for each fixed r let N(r) be the least q0 >= r such that the sequence f(q,r)-q is periodic for all q >= q0 (if row r has only finitely many P-positions, i.e. f(q,r) < q for all large q, N(r) is instead the least q with f(q,r) < q). Define B_c(a)=f(c+a,c)-(c+a) (undefined where no loser [c,a,b] exists), u_c=N(c)-c, p_c=the period of f(q,c)-q for q >= N(c) (p_c:=1 for rows with finitely many P-positions), q_r=lcm{p_c : 0<=c<r}, m_r=1+max{B_c(a) : 0<=c<r, a>=0}, U_r=max{u_c:c<r}, t_r=max(U_r,r). Then for every r>=1: (i) m_r<=r+1; (ii) p_r<=q_r(m_r+1)^(m_r); (iii) u_r<=max(t_r,m_r)+q_r(m_r+1)^(m_r); (iv) q_{r+1}<=q_r^2(r+2)^(r+1). Hence N(r)<=r+max(t_r,m_r)+q_r(m_r+1)^(m_r) for rows with infinitely many P-positions, and N(r)<=r+1+max(t_r,m_r)+q_r(m_r+1)^(m_r) otherwise. Every quantity on the right is computed from the rows c<r alone, so this is an effective recursion for N(r).",
+  "ledger_statement": "CORRECTED ZEILBERGER RECURSION (repairs C0013). In Zeilberger coordinates [c,a,b] with B_c(a)=f(c+a,c)-(c+a), u_c=N(c)-c, p_c=period(c) (p_c:=1 for stale rows), q_r=lcm{p_c:c<r}, m_r=1+max{B_c(a):c<r,a>=0}, U_r=max{u_c:c<r}, t_r=max(U_r,r): for every r>=1, (i) m_r<=r+1 (C0012, cited prior art); (ii) p_r<=q_r(m_r+1)^{m_r}; (iii) u_r<=max(t_r,m_r)+q_r(m_r+1)^{m_r}; (iv) q_{r+1}<=q_r^2(r+2)^{r+1}. Hence N(r)<=r+max(t_r,m_r)+q_r(m_r+1)^{m_r} for live rows (stale rows similar with +1). This is an EFFECTIVE recursion for N(r): every right-hand quantity is computed from the already-solved rows c<r. The instant-winner preperiod bound t_r (Lemma P in the proof) is the piece C0023 flagged as missing; the false closed form of C0013 is NOT restored.",
+  "submission_leaks": [
+    "island",
+    "phase 0",
+    "byrnes_audit",
+    "cross-reference C0007",
+    "cross-reference C0013",
+    "cross-reference C0022"
+  ],
+  "escape_attempts_blocked": 0,
+  "spend": 0.0795,
+  "run": "31",
+  "transcripts": "runs/referee/run-31/",
+  "verdicts": [
+    {
+      "disposition": "reject",
+      "first_gap_line": "A stale row has finitely many P-positions; the last has `f(q*, r) = q*`, i.e. `B_r(a*) = 0` at `a* = q* - r`, and no values for `a > a*`.",
+      "gap_description": "This is asserted, not proved, and it is load-bearing for the stale-row bound N(r) <= r+1+max(t_r,m_r)+q_r(m_r+1)^{m_r}: nothing shows that B_r(a)=0 forces termination (i.e. that no loser [r,a',b] exists for a'>a), nor that the least q with f(q,r)<q coincides with q*+1. The later stale argument ('the pigeonhole ... forcing L to stay periodic past a*') also applies the Fundamental Recurrence beyond the range where it is claimed to hold (only where L_a is defined and positive), so the contradiction does not follow. A second unproved load-bearing step is the display W_r(a) = union_{c<r}(V''_{r,c}(a) union V'_{r,c}(a)), attributed to Zeilberger's Lemmas 1-3 via (1.3),(2.2) and Lemma 3, whose exact content is not reproduced and which the submission's own cited correction [C0023] warns is mis-attributed in the prior audit. The live-row core (state S_a with phase, pigeonhole giving (ii),(iii)) appears sound given the W_r formulas and the truncation valid for a >= m_r. I did not complete the computational counterexample pass (no solver run in this referee pass), so the claim itself is not falsified here.",
+      "counterexample_search": {
+        "range_checked": "none \u2014 computational verification against GROUND_TRUTH was not run in this pass",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "The recursion is effective in FORM: the constants are explicitly produced, e.g. 'm_r <= r + 1' (via C0012) and 'q_{r+1} = lcm(q_r, p_r) <= q_r * p_r <= q_r^2 (m_r+1)^{m_r}, and m_r + 1 <= r + 2, m_r <= r + 1, give q_{r+1} <= q_r^2 (r+2)^{r+1}', so q_r, m_r, t_r are finite computations over rows c < r and a calculator could evaluate N(r)'s bound for r = 1000. However, the inequality that makes the bound apply to stale rows is the unproved assertion named in gap_description, so the effectivity claim is not established for all rows.",
+      "confidence": "low",
+      "_temperature": 0.3,
+      "_spend": 0.043,
+      "_run": "31"
+    },
+    {
+      "disposition": "reject",
+      "first_gap_line": "Zeilberger's Lemma Bounded then applies with M = m_r: every defined B_r(a) <= m_r while the sequence has not terminated.",
+      "gap_description": "m_r is defined as 1+max{B_c(a): c<r}, i.e. from rows strictly below r, but the only bound actually established for row r is B_r(a) <= r (from C0012). Nothing shows max_a B_r(a) <= m_r; if the rows c<r are uniformly small, m_r can be far below r and the truncation of the mex to M=m_r trailing terms (and the state count (m_r+1)^{m_r}) is invalid. Relatedly, the 'Fundamental Recurrence' L_a = mex(W_r(a) \u222a {L_{a-i}-i}) is asserted to hold identically and supported only by numerical agreement with the solver, not derived from Zeilberger's lemmas, and the stale-row argument ('forcing L to stay periodic ... past a*' \u2014 a contradiction) does not follow since the dynamics are undefined past a*, so no contradiction is produced. These are load-bearing, not cosmetic.",
+      "counterexample_search": {
+        "range_checked": "none \u2014 the numerical pass (F1\u2013F5) was not executed in this run; the gap was found by inspection of the quantifiers in Sections 2\u20133",
+        "result": "no counterexample",
+        "counterexample": null
+      },
+      "novelty": {
+        "searched": [],
+        "result": "inconclusive",
+        "reference": null
+      },
+      "effectivity_check": "The recursion is effective in FORM (q_r, m_r, t_r are finite computations over rows c<r), but the constant that does the work is produced only by the assertion 'Zeilberger's Lemma Bounded then applies with M = m_r: every defined B_r(a) <= m_r', which is exactly the unproven step; without it the state space and hence the bound q_r(m_r+1)^{m_r} are not justified, so no computable bound on N(r) is actually established.",
+      "confidence": "medium",
+      "_temperature": 0.8,
+      "_spend": 0.0365,
+      "_run": "31"
+    }
+  ]
+}

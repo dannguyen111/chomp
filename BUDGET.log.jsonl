@@ -2760,3 +2760,7 @@
 {"t": 1791582330.3900635, "tag": "referee/C0032/t0.8", "cost": 0.0092805162, "model": "xiaomi/mimo-v2.6-pro"}
 {"t": 1791582540.0596313, "tag": "referee/C0032/t0.8", "cost": 0.0097510092, "model": "xiaomi/mimo-v2.6-pro"}
 {"t": 1791582569.1907184, "tag": "referee/C0032/t0.8", "cost": 0.0039914982, "model": "xiaomi/mimo-v2.6-pro"}
+{"t": 1791646063.4622343, "tag": "referee/C0024/t0.3", "cost": 0.030968085, "model": "xiaomi/mimo-v2.6-pro"}
+{"t": 1791646151.381506, "tag": "referee/C0024/t0.3", "cost": 0.012040365, "model": "xiaomi/mimo-v2.6-pro"}
+{"t": 1791646447.6463504, "tag": "referee/C0024/t0.8", "cost": 0.030968085, "model": "xiaomi/mimo-v2.6-pro"}
+{"t": 1791646477.4629405, "tag": "referee/C0024/t0.8", "cost": 0.005579745, "model": "xiaomi/mimo-v2.6-pro"}
